@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 import 'screens/main_menu.dart';
+import 'screens/splash_screen.dart';
 
 void main() {
-  runApp(const LEOGame());
+  runApp(const MyApp());
 }
 
-class LEOGame extends StatelessWidget {
-  const LEOGame({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Vida de LEO Clube',
-      theme: ThemeData.dark(),
-      home: const MainMenu(),
+      title: 'LEO Clube Game',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.amber,
+      ),
+      home: const SplashScreen(),
     );
   }
 }

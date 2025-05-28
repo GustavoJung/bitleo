@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'game_screen.dart';
 
 class MainMenu extends StatelessWidget {
-  const MainMenu({super.key});
+  final String nome;
+
+  const MainMenu({super.key, required this.nome});
 
   @override
   Widget build(BuildContext context) {
@@ -10,63 +12,77 @@ class MainMenu extends StatelessWidget {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF0f2027), Color(0xFF203a43), Color(0xFF2c5364)],
+            colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
         ),
         child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.groups, size: 120, color: Colors.orange),
-                const SizedBox(height: 20),
-                const Text(
-                  'VIDA DE LEO CLUBE',
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.emoji_events,
+                color: Colors.amber,
+                size: 100,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Vida de LEO Clube',
+                style: const TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Bem-vindo(a), $nome!',
+                style: const TextStyle(
+                  fontSize: 18,
+                  color: Colors.white70,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+              const SizedBox(height: 50),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30)),
+                  elevation: 10,
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => GameScreen(nome: nome)),
+                  );
+                },
+                child: const Text(
+                  'Iniciar',
                   style: TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.orange),
-                  textAlign: TextAlign.center,
+                      color: Colors.black,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Viva, participe, aprenda e suba na liderança!',
-                  style: TextStyle(fontSize: 16, color: Colors.white70),
-                  textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              TextButton(
+                onPressed: () {
+                  // Aqui futuramente pode abrir um tutorial ou créditos
+                },
+                child: const Text(
+                  'Sobre o Projeto',
+                  style: TextStyle(color: Colors.white70),
                 ),
-                const SizedBox(height: 50),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).push(_createRoute());
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    minimumSize: const Size(double.infinity, 50),
-                  ),
-                  child: const Text('Iniciar'),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
-    );
-  }
-
-  Route _createRoute() {
-    return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) =>
-          const GameScreen(),
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        final fadeAnimation = Tween<double>(begin: 0, end: 1).animate(animation);
-        return FadeTransition(
-          opacity: fadeAnimation,
-          child: child,
-        );
-      },
     );
   }
 }
