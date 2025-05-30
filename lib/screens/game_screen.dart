@@ -17,7 +17,7 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   List<String> story = ["${DateTime.now().year}: ${"Você ingressou no LEO Clube!"}"];
 
   int dinheiro = 100;
@@ -26,7 +26,7 @@ class _GameScreenState extends State<GameScreen>
   int saude = 50;
   double idade = 18;
   int xp = 0;
-  String cargo = 'Membro';
+  String cargo = 'Pré-LEO';
 
   final random = Random();
   final ScrollController _scrollController = ScrollController();
@@ -36,6 +36,10 @@ class _GameScreenState extends State<GameScreen>
   late Animation<Color?> colorAnimation1;
   late Animation<Color?> colorAnimation2;
   late ConfettiController _confettiController;
+
+  late Map<String, AnimationController> statusControllers;
+  late Map<String, Animation<double>> statusAnimations;
+  String animatedStatus = '';
 
   @override
   void initState() {
@@ -58,14 +62,34 @@ class _GameScreenState extends State<GameScreen>
 
     _confettiController =
         ConfettiController(duration: const Duration(seconds: 2));
+
+    statusControllers = {
+      'dinheiro': AnimationController(vsync: this, duration: const Duration(milliseconds: 500)),
+      'inteligencia': AnimationController(vsync: this, duration: const Duration(milliseconds: 500)),
+      'felicidade': AnimationController(vsync: this, duration: const Duration(milliseconds: 500)),
+      'saude': AnimationController(vsync: this, duration: const Duration(milliseconds: 500)),
+      'xp': AnimationController(vsync: this, duration: const Duration(milliseconds: 500)),
+    };
+
+    statusAnimations = {
+      for (var key in statusControllers.keys)
+        key: TweenSequence([
+          TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3), weight: 50),
+          TweenSequenceItem(tween: Tween(begin: 1.3, end: 1.0), weight: 50),
+        ]).chain(CurveTween(curve: Curves.easeInOut)).animate(statusControllers[key]!)
+    };
   }
 
   @override
   void dispose() {
     _colorController.dispose();
     _confettiController.dispose();
+    for (var controller in statusControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
+
 
   void navigateWithTransition(BuildContext context, Widget page) {
     Navigator.push(
@@ -150,42 +174,53 @@ class _GameScreenState extends State<GameScreen>
     );
   }
 
-  Widget statusIcon(IconData icon, String value) {
-    return Column(
-      children: [
-        Icon(icon, color: Colors.amber, size: 28),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(color: Colors.white, fontSize: 14),
-        ),
-      ],
-    );
+  void applyChanges(Map<String, dynamic> selected, String description) {
+    int gasto = ((selected['dinheiro'] ?? 0) as num).toInt();
+    if (dinheiro + gasto < 0) {
+      showDialogMessage('💸 Sem grana!', 'Você não tem dinheiro suficiente para essa atividade.');
+      return;
+    }
+
+    setState(() {
+      dinheiro += gasto;
+      if (gasto != 0) triggerStatusAnim('dinheiro');
+
+      final intel = ((selected['inteligencia'] ?? 0) as num).toInt();
+      inteligencia += intel;
+      if (intel != 0) triggerStatusAnim('inteligencia');
+
+      final feliz = ((selected['felicidade'] ?? 0) as num).toInt();
+      felicidade += feliz;
+      if (feliz != 0) triggerStatusAnim('felicidade');
+
+      final vida = ((selected['saude'] ?? 0) as num).toInt();
+      saude += vida;
+      if (vida != 0) triggerStatusAnim('saude');
+
+      final pontos = ((selected['xp'] ?? 0) as num).toInt();
+      xp += pontos;
+      if (pontos != 0) triggerStatusAnim('xp');
+
+      idade += 0.05;
+
+      story.add("${DateTime.now().year + idade.floor() - 18}: $description");
+
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent + 100,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOut,
+      );
+
+      checkConsequences();
+      updateCargo();
+      checkRandomEvent();
+    });
   }
 
-  void applyChanges(Map<String, dynamic> selected, String description) {
-
-  setState(() {
-    dinheiro += ((selected['dinheiro'] ?? 0) as num).toInt();
-    inteligencia += ((selected['inteligencia'] ?? 0) as num).toInt();
-    felicidade += ((selected['felicidade'] ?? 0) as num).toInt();
-    saude += ((selected['saude'] ?? 0) as num).toInt();
-    xp += ((selected['xp'] ?? 0) as num).toInt();
-
-    idade += 0.2;
-
-    story.add("${DateTime.now().year + idade.floor() - 18}: $description");
-
-    _scrollController.animateTo(
-      _scrollController.position.maxScrollExtent + 100,
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeOut,
-    );
-
-    checkConsequences();
-    updateCargo();
-  });
-}
+  void triggerStatusAnim(String status) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    statusControllers[status]?.forward(from: 0);
+  }
 
 void checkConsequences() {
   if (felicidade <= 0) {
@@ -219,40 +254,114 @@ void showDialogMessage(String title, String message) {
 }
 
 void updateCargo() {
-  final cargos = [
-    {'xp': 40, 'nome': 'Diretor Social'},
-    {'xp': 60, 'nome': 'Diretor de Marketing'},
-    {'xp': 80, 'nome': 'Tesoureiro'},
-    {'xp': 100, 'nome': 'Secretário'},
-    {'xp': 150, 'nome': 'Vice-Presidente'},
-    {'xp': 200, 'nome': 'Presidente'},
-  ];
+    final cargos = [
+      {'xp': 50, 'nome': 'Membro'},
+      {'xp': 80, 'nome': 'Diretor Social'},
+      {'xp': 110, 'nome': 'Diretor de Marketing'},
+      {'xp': 140, 'nome': 'Diretor de Campanhas'},
+      {'xp': 180, 'nome': 'Tesoureiro'},
+      {'xp': 220, 'nome': 'Secretário'},
+      {'xp': 260, 'nome': 'Vice-Presidente'},
+      {'xp': 300, 'nome': 'Presidente'},
+    ];
 
-  for (var c in cargos) {
-    if (xp >= (c['xp'] as int) && cargo != (c['nome'] as String)) {
-      cargo = c['nome'] as String;
+    for (var c in cargos) {
+      if (xp >= (c['xp'] as int) && cargos.indexWhere((e) => e['nome'] == cargo) < cargos.indexOf(c)) {
+        cargo = c['nome'] as String;
 
-      story.add(
-          "${DateTime.now().year + idade.floor() - 18}: 🎉 Você foi promovido(a) a $cargo!");
+        story.add("${DateTime.now().year + idade.floor() - 18}: 🎉 Você foi promovido(a) a $cargo!");
 
-      showAnimatedDialog('🎉 Promoção!', 'Você agora é $cargo!');
+        showAnimatedDialog('🎉 Promoção!', 'Você agora é $cargo!');
 
-      _confettiController.play();
+        _confettiController.play();
 
-      if (!conquistas.contains('Se tornou $cargo')) {
-        conquistas.add('Se tornou $cargo');
+        if (!conquistas.contains('Se tornou $cargo')) {
+          conquistas.add('Se tornou $cargo');
+        }
+
+        break;
       }
-
-      break;
     }
-  }
 }
+
+void checkRandomEvent() {
+    final chance = random.nextInt(100);
+    if (chance < 20) {
+      showRandomDialog();
+    }
+}
+
+  void showRandomDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text('🤔 Evento Aleatório', style: TextStyle(color: Colors.amber)),
+        content: const Text(
+          'Você foi convidado para uma reunião surpresa do clube. Deseja participar?',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              applyChanges({'xp': 10, 'felicidade': 5}, 'Participou de uma reunião surpresa do clube.');
+            },
+            child: const Text('Participar'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              story.add("${DateTime.now().year + idade.floor() - 18}: Você ignorou uma reunião do clube.");
+            },
+            child: const Text('Ignorar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget statusIcon(IconData icon, String value, String keyName) {
+    final animation = statusAnimations[keyName]!;
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: animation.value,
+          child: Column(
+            children: [
+              Icon(icon, color: Colors.amber, size: 28),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget buildStatusBar() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        statusIcon(Icons.attach_money, dinheiro.toString(), 'dinheiro'),
+        statusIcon(Icons.school, inteligencia.toString(), 'inteligencia'),
+        statusIcon(Icons.favorite, saude.toString(), 'saude'),
+        statusIcon(Icons.emoji_emotions, felicidade.toString(), 'felicidade'),
+        statusIcon(Icons.star, xp.toString(), 'xp'),
+      ],
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: buildCustomAppBarWithActions(
-  title: 'Vida de LEO Clube - ${widget.nome}',
+  title: 'C. LEO - ${widget.nome}',
   actions: [
     IconButton(
       icon: const Icon(Icons.person),
@@ -311,18 +420,7 @@ void updateCargo() {
                           child: Container(
                             color: Colors.white.withOpacity(0.05),
                             padding: const EdgeInsets.all(12),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                statusIcon(
-                                    Icons.attach_money, dinheiro.toString()),
-                                statusIcon(Icons.school, inteligencia.toString()),
-                                statusIcon(Icons.favorite, saude.toString()),
-                                statusIcon(Icons.emoji_emotions,
-                                    felicidade.toString()),
-                                statusIcon(Icons.star, xp.toString()),
-                              ],
-                            ),
+                            child: buildStatusBar(),
                           ),
                         ),
                       ),
