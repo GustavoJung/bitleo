@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'main_menu.dart';
+import 'splash_screen.dart';
+import '../services/atributos_storage.dart';
 
 class NameScreen extends StatefulWidget {
   const NameScreen({super.key});
@@ -31,11 +32,12 @@ class _NameScreenState extends State<NameScreen> {
                 const Icon(Icons.emoji_events, color: Colors.amber, size: 100),
                 const SizedBox(height: 20),
                 const Text(
-                  'Bem-vindo ao Vida de LEO Clube!',
+                  'Simulador de Vida de LEO Clube!',
                   style: TextStyle(
-                      fontSize: 22,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold),
+                    fontSize: 22,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 20),
@@ -56,18 +58,23 @@ class _NameScreenState extends State<NameScreen> {
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.amber,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 14,
+                    ),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30)),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
                   ),
-                  onPressed: () {
+                  onPressed: () async {
                     String nome = _controller.text.trim();
                     if (nome.isNotEmpty) {
+                      await AtributosStorage.salvarNomeJogador(nome);
+                      await AtributosStorage.salvarPontos(3);
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => MainMenu(nome: _controller.text),
+                          builder: (context) => const SplashScreen(),
                         ),
                       );
                     }
@@ -75,9 +82,12 @@ class _NameScreenState extends State<NameScreen> {
                   child: const Text(
                     'Começar',
                     style: TextStyle(
-                        color: Colors.black, fontWeight: FontWeight.bold),
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                )
+                ),
+                Image.asset('assets/images/Logo_rgb_Leo_2C.png', width: 180),
               ],
             ),
           ),

@@ -13,87 +13,88 @@ class ActionsScreen extends StatelessWidget {
   });
 
   void showInfoDialog(BuildContext context, String title, String description) {
-  showGeneralDialog(
-    context: context,
-    barrierDismissible: true,
-    barrierLabel: '',
-    transitionDuration: const Duration(milliseconds: 400),
-    pageBuilder: (context, animation, secondaryAnimation) {
-      return Center(
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              width: 300,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.grey[900]?.withOpacity(0.8),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.white.withOpacity(0.1),
-                    blurRadius: 20,
-                    spreadRadius: 5,
-                  )
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.amber,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: '',
+      transitionDuration: const Duration(milliseconds: 400),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Center(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                width: 300,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.grey[900]?.withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withOpacity(0.1),
+                      blurRadius: 20,
+                      spreadRadius: 5,
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      description,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.amber,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30)),
-                      ),
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      child: const Text(
-                        'Fechar',
-                        style: TextStyle(
-                          color: Colors.black,
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.amber,
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      Text(
+                        description,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: const Text(
+                          'Fechar',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
-    },
-    transitionBuilder: (context, animation, secondaryAnimation, child) {
-      return FadeTransition(
-        opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-        child: child,
-      );
-    },
-  );
-}
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+          child: child,
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -117,34 +118,46 @@ class ActionsScreen extends StatelessWidget {
         'effects': {'felicidade': 5, 'xp': 5, 'dinheiro': -10},
       },
       {
-        'label': 'SEDEL',
-        'description': 'Desenvolvimento de lideranças.',
-        'icon': Icons.leaderboard,
-        'effects': {'xp': 15, 'felicidade': 5, 'dinheiro': -30},
-      },
-      {
-        'label': 'JALC',
-        'description': 'Jogos do LEO Clube. Diversão garantida.',
-        'icon': Icons.sports_esports,
-        'effects': {'felicidade': 20, 'xp': 10, 'dinheiro': -40, 'saude': -5},
-      },
-      {
-        'label': 'AcampaLEO',
-        'description': 'Acampamento cheio de atividades.',
-        'icon': Icons.park,
-        'effects': {'felicidade': 25, 'xp': 8, 'dinheiro': -60, 'saude': -10},
-      },
-      {
-        'label': 'Encontro de Regiões',
-        'description': 'Integração com outros clubes.',
-        'icon': Icons.group,
-        'effects': {'felicidade': 10, 'xp': 12, 'dinheiro': -30},
-      },
-      {
         'label': 'Descansar',
         'description': 'Recupere sua saúde e felicidade.',
         'icon': Icons.bedtime,
         'effects': {'saude': 10, 'felicidade': 10, 'xp': 1},
+      },
+      {
+        'label': 'Organizar Evento',
+        'description': 'Planeje um evento local do clube.',
+        'icon': Icons.event,
+        'effects': {
+          'organização': 3,
+          'xp': 5,
+          'felicidade': 2,
+          'dinheiro': -10,
+        },
+      },
+      {
+        'label': 'Participar de Reunião',
+        'description': 'Participe de uma reunião do clube.',
+        'icon': Icons.groups,
+        'effects': {'oratória': 2, 'xp': 3},
+      },
+      {
+        'label': 'Mentorar Novato',
+        'description': 'Ajude um novo membro a se integrar.',
+        'icon': Icons.support,
+        'effects': {'empatia': 3, 'xp': 4, 'felicidade': 2},
+      },
+      {
+        'label': 'Redes Sociais',
+        'description': 'Crie conteúdo para divulgar as ações do clube.',
+        'icon': Icons.share,
+        'effects': {'oratória': 2, 'organização': 1, 'xp': 4},
+      },
+      {
+        'label': 'Reunião Distrital',
+        'description':
+            'Participe de uma reunião com outros clubes do distrito.',
+        'icon': Icons.location_city,
+        'effects': {'oratória': 3, 'empatia': 2, 'xp': 6, 'dinheiro': -15},
       },
     ];
 
@@ -175,37 +188,44 @@ class ActionsScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.1),
-                      ),
+                      border: Border.all(color: Colors.white.withOpacity(0.1)),
                     ),
                     child: ListTile(
-                      leading: Icon(action['icon'], color: Colors.amber, size: 32),
+                      leading: Icon(
+                        action['icon'],
+                        color: Colors.amber,
+                        size: 32,
+                      ),
                       title: Text(
                         action['label'],
                         style: const TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold),
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       subtitle: Text(
                         action['description'],
                         style: const TextStyle(color: Colors.white70),
                       ),
                       trailing: IconButton(
-                        icon: const Icon(Icons.info_outline, color: Colors.white70),
+                        icon: const Icon(
+                          Icons.info_outline,
+                          color: Colors.white70,
+                        ),
                         onPressed: () {
-                           showInfoDialog(
+                          showInfoDialog(
                             context,
                             action['label'],
                             action['description'],
-                        );
+                          );
                         },
                       ),
                       onTap: () {
                         Navigator.pop(context);
-                          onActionSelected(
-                            action['effects'] as Map<String, dynamic>,
-                            action['label'],
-                          );
+                        onActionSelected(
+                          action['effects'] as Map<String, dynamic>,
+                          action['label'],
+                        );
                       },
                     ),
                   ),

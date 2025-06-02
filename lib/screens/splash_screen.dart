@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../services/atributos_storage.dart';
+import 'game_screen.dart';
 import 'name_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -16,18 +18,51 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-    _controller =
-        AnimationController(vsync: this, duration: const Duration(seconds: 2));
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    );
     _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
     _controller.forward();
 
-    Future.delayed(const Duration(seconds: 3), () {
+    _navigate();
+  }
+
+  Future<void> _navigate() async {
+    debugPrint('🟡 Entrou no _navigate');
+    await Future.delayed(const Duration(seconds: 2));
+    final nome = await AtributosStorage.carregarNomeJogador();
+    debugPrint('🔵 Nome carregado: $nome');
+
+    if (nome != null && nome.isNotEmpty) {
+      var pontos = await AtributosStorage.carregarPontos();
+      debugPrint('🟢 Pontos carregados inicialmente: $pontos');
+
+      if (pontos == 0) {
+        await AtributosStorage.salvarPontos(3);
+        await AtributosStorage.salvar({
+          'Oratória': 0,
+          'Liderança': 0,
+          'Empatia': 0,
+          'Organização': 0,
+        });
+        pontos = 3;
+      }
+
+      final confirmPontos = await AtributosStorage.carregarPontos();
+      debugPrint('✅ Pontos confirmados: $confirmPontos');
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => GameScreen(nome: nome)),
+      );
+    } else {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const NameScreen()),
       );
-    });
-  } // 🔥 🔥 🔥 ← ESSA CHAVE AQUI TAVA FALTANDO!!
+    }
+  }
 
   @override
   void dispose() {
@@ -45,17 +80,20 @@ class _SplashScreenState extends State<SplashScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset(
-                'assets/images/Logo_rgb_Leo_2C.png',
-                width: 180,
-              ),
+              Image.asset('assets/images/Logo_rgb_Leo_2C.png', width: 180),
               const SizedBox(height: 20),
               const Text(
                 'Vida de LEO Clube',
                 style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold),
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Carregando...',
+                style: TextStyle(color: Colors.white70, fontSize: 18),
               ),
             ],
           ),

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'game_screen.dart';
 
 class MainMenu extends StatelessWidget {
-  final String nome;
+  final String? nome;
 
-  const MainMenu({super.key, required this.nome});
+  const MainMenu({super.key, this.nome});
 
   @override
   Widget build(BuildContext context) {
@@ -21,11 +21,7 @@ class MainMenu extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.emoji_events,
-                color: Colors.amber,
-                size: 100,
-              ),
+              const Icon(Icons.emoji_events, color: Colors.amber, size: 100),
               const SizedBox(height: 20),
               Text(
                 'Vida de LEO Clube',
@@ -37,7 +33,7 @@ class MainMenu extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                'Bem-vindo(a), $nome!',
+                'Bem-vindo(a), ${nome ?? 'Convidado'}!',
                 style: const TextStyle(
                   fontSize: 18,
                   color: Colors.white70,
@@ -48,25 +44,30 @@ class MainMenu extends StatelessWidget {
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.amber,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 40,
+                    vertical: 16,
+                  ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30)),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
                   elevation: 10,
                 ),
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => GameScreen(nome: nome)),
+                      builder: (context) => GameScreen(nome: nome ?? ''),
+                    ),
                   );
                 },
                 child: const Text(
                   'Iniciar',
                   style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold),
+                    color: Colors.black,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
