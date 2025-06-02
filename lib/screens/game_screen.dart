@@ -17,26 +17,59 @@ class GameScreen extends StatefulWidget {
   State<GameScreen> createState() => _GameScreenState();
 }
 
-class _GameScreenState extends State<GameScreen>
-    with TickerProviderStateMixin {
+class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   List<String> story = [];
- 
+
   int dinheiro = 100;
   int inteligencia = 5;
   int felicidade = 50;
   int saude = 50;
   double idade = 18;
   int xp = 0;
+  late int anoAtual;
+  int anoAnterior = 0;
+  int acoesDesdeUltimoEvento = 0;
+  int totalAcoesDesdeInicioTrimestre = 0;
+  Set<String> eventosMostradosEsteAno = {};
+  Map<String, int> acoesExecutadasEsteAno = {};
+  Map<String, int> trimestreEvento = {
+    'JALC': 1,
+    'SEDEL': 2,
+    'ACAMPALEO': 3,
+    'Encontro de Região': 4,
+    'CONFE': 4,
+  };
+  Map<String, double> ultimaOcorrenciaEvento = {
+    'JALC': 0,
+    'SEDEL': 0,
+    'ACAMPALEO': 0,
+    'Encontro de Região': 0,
+    'CONFE': 0,
+  };
+  Map<int, bool> eventoDoTrimestreJaMostrado = {
+    1: false,
+    2: false,
+    3: false,
+    4: false,
+  };
+  Map<int, Set<String>> eventosMostradosPorTrimestre = {
+    1: {},
+    2: {},
+    3: {},
+    4: {},
+  };
   String cargo = 'Pré-LEO';
   String? ultimoCargoOferecido;
   String regiao = 'Região Alpha';
   String distrito = 'Distrito Z';
-  String regiaoDesc = 'Uma das regiões mais ativas do nosso universo LEO, cheia de clubes dedicados.';
-  String distritoDesc = 'Esse distrito fictício é conhecido por organizar os melhores eventos!';
+  String regiaoDesc =
+      'Uma das regiões mais ativas do nosso universo LEO, cheia de clubes dedicados.';
+  String distritoDesc =
+      'Esse distrito fictício é conhecido por organizar os melhores eventos!';
 
   final random = Random();
   final ScrollController _scrollController = ScrollController();
-  final TextEditingController _clubeController = TextEditingController();
+  Map<String, int> cargosRecusados = {};
   List<String> conquistas = [];
 
   late AnimationController _colorController;
@@ -47,36 +80,93 @@ class _GameScreenState extends State<GameScreen>
   late Map<String, AnimationController> statusControllers;
   late Map<String, Animation<double>> statusAnimations;
   String animatedStatus = '';
-  int pontosDeAtributo = 0;
+  int pontosDeAtributo = 3;
+  bool distribuiuPontosIniciais = false;
   Map<String, int> atributos = {
     'Oratória': 0,
     'Liderança': 0,
     'Empatia': 0,
     'Organização': 0,
   };
+  bool isProcessing = false;
 
-   late final List<Map<String, dynamic>> cargos = [
-    {'xp': 50, 'nome': 'Membro', 'requisitos': {'Oratória': 5}},
-    {'xp': 80, 'nome': 'Diretor Social', 'requisitos': {'Empatia': 10}},
-    {'xp': 110, 'nome': 'Diretor de Marketing', 'requisitos': {'Oratória': 15, 'Organizacao': 10}},
-    {'xp': 140, 'nome': 'Diretor de Campanhas', 'requisitos': {'Lideranca': 15}},
-    {'xp': 180, 'nome': 'Tesoureiro', 'requisitos': {'Organizacao': 20}},
-    {'xp': 220, 'nome': 'Secretário', 'requisitos': {'Oratória': 20, 'Organizacao': 25}},
-    {'xp': 260, 'nome': 'Vice-Presidente', 'requisitos': {'Lideranca': 30, 'Oratória': 25}},
-    {'xp': 300, 'nome': 'Presidente', 'requisitos': {'Lideranca': 40, 'Oratória': 35, 'Empatia': 30, 'Organizacao': 30}},
+  late final List<Map<String, dynamic>> cargos = [
+    {
+      'xp': 50,
+      'nome': 'Membro',
+      'requisitos': {'Oratória': 5},
+    },
+    {
+      'xp': 80,
+      'nome': 'Diretor Social',
+      'requisitos': {'Empatia': 10},
+    },
+    {
+      'xp': 110,
+      'nome': 'Diretor de Marketing',
+      'requisitos': {'Oratória': 15, 'Organização': 10},
+    },
+    {
+      'xp': 140,
+      'nome': 'Diretor de Campanhas',
+      'requisitos': {'Liderança': 15},
+    },
+    {
+      'xp': 180,
+      'nome': 'Tesoureiro',
+      'requisitos': {'Organização': 20},
+    },
+    {
+      'xp': 220,
+      'nome': 'Secretário',
+      'requisitos': {'Oratória': 20, 'Organização': 25},
+    },
+    {
+      'xp': 260,
+      'nome': 'Vice-Presidente',
+      'requisitos': {'Liderança': 30, 'Oratória': 25},
+    },
+    {
+      'xp': 300,
+      'nome': 'Presidente',
+      'requisitos': {
+        'Liderança': 40,
+        'Oratória': 35,
+        'Empatia': 30,
+        'Organização': 30,
+      },
+    },
   ];
 
   @override
   void initState() {
     super.initState();
 
+    final int anoReal = DateTime.now().year;
+    anoAtual = anoReal;
+    anoAnterior = anoReal;
+
+    AtributosStorage.verificarInicializacao();
+
     AtributosStorage.carregar().then((dados) {
       setState(() => atributos = dados);
       updateCargo();
     });
 
-    AtributosStorage.carregarPontos().then((p) {
-      setState(() => pontosDeAtributo = p);
+    AtributosStorage.carregarDistribuicaoInicial().then((distribuiu) {
+      distribuiuPontosIniciais = distribuiu;
+      AtributosStorage.carregarPontos().then((p) {
+        print('carregarPontos: $p | distribuiu: $distribuiuPontosIniciais');
+        pontosDeAtributo = p;
+        if (p == 3 && !distribuiuPontosIniciais) {
+          distribuiuPontosIniciais = true;
+          AtributosStorage.salvarDistribuicaoInicial(true);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            showDistribuicaoInicial();
+          });
+        }
+        setState(() {});
+      });
     });
 
     _colorController = AnimationController(
@@ -84,25 +174,61 @@ class _GameScreenState extends State<GameScreen>
       duration: const Duration(seconds: 8),
     )..repeat(reverse: true);
 
-    colorAnimation1 = ColorTween(begin: const Color(0xFF0F2027), end: const Color(0xFF203A43)).animate(_colorController);
-    colorAnimation2 = ColorTween(begin: const Color(0xFF203A43), end: const Color(0xFF2C5364)).animate(_colorController);
+    colorAnimation1 = ColorTween(
+      begin: const Color(0xFF0F2027),
+      end: const Color(0xFF203A43),
+    ).animate(_colorController);
+    colorAnimation2 = ColorTween(
+      begin: const Color(0xFF203A43),
+      end: const Color(0xFF2C5364),
+    ).animate(_colorController);
 
-    _confettiController = ConfettiController(duration: const Duration(seconds: 2));
+    _confettiController = ConfettiController(
+      duration: const Duration(seconds: 2),
+    );
 
     statusControllers = {
-      'dinheiro': AnimationController(vsync: this, duration: const Duration(milliseconds: 500)),
-      'inteligencia': AnimationController(vsync: this, duration: const Duration(milliseconds: 500)),
-      'felicidade': AnimationController(vsync: this, duration: const Duration(milliseconds: 500)),
-      'saude': AnimationController(vsync: this, duration: const Duration(milliseconds: 500)),
-      'xp': AnimationController(vsync: this, duration: const Duration(milliseconds: 500)),
+      'dinheiro': AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 500),
+      ),
+      'inteligencia': AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 500),
+      ),
+      'felicidade': AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 500),
+      ),
+      'saude': AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 500),
+      ),
+      'xp': AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 500),
+      ),
+      'atributos': AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 500),
+      ),
     };
 
     statusAnimations = {
       for (var key in statusControllers.keys)
-        key: TweenSequence([
-          TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3), weight: 50),
-          TweenSequenceItem(tween: Tween(begin: 1.3, end: 1.0), weight: 50),
-        ]).chain(CurveTween(curve: Curves.easeInOut)).animate(statusControllers[key]!)
+        key:
+            TweenSequence([
+                  TweenSequenceItem(
+                    tween: Tween(begin: 1.0, end: 1.3),
+                    weight: 50,
+                  ),
+                  TweenSequenceItem(
+                    tween: Tween(begin: 1.3, end: 1.0),
+                    weight: 50,
+                  ),
+                ])
+                .chain(CurveTween(curve: Curves.easeInOut))
+                .animate(statusControllers[key]!),
     };
   }
 
@@ -117,27 +243,101 @@ class _GameScreenState extends State<GameScreen>
   }
 
   String getProximoCargoPreview() {
-  for (var c in cargos) {
-    final nomeCargo = c['nome'];
-    final xpRequerido = c['xp'];
-    final requisitos = Map<String, int>.from(c['requisitos'] ?? {});
-    bool cargoAtualEhInferior =
-        cargos.indexWhere((e) => e['nome'] == cargo) < cargos.indexOf(c);
+    for (var c in cargos) {
+      final nomeCargo = c['nome'];
+      final xpRequerido = c['xp'];
+      final requisitos = Map<String, int>.from(c['requisitos'] ?? {});
+      bool cargoAtualEhInferior =
+          cargos.indexWhere((e) => e['nome'] == cargo) < cargos.indexOf(c);
 
-    if (cargoAtualEhInferior) {
-      final reqText = requisitos.entries.map((e) => "- ${e.key}: ${e.value}").join('\n');
-      return '''
+      if (cargoAtualEhInferior) {
+        final reqText = requisitos.entries
+            .map((e) => "- ${e.key}: ${e.value}")
+            .join('\n');
+        return '''
 Próximo Cargo: $nomeCargo
-XP necessário: $xpRequerido
+XP necessário: $xpRequerido (atual: $xp)
 Requisitos:
 $reqText
 ''';
+      }
     }
+    return 'Você já atingiu o cargo máximo!';
   }
-  return 'Você já atingiu o cargo máximo!';
-}
 
-
+  void showDistribuicaoInicial() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              backgroundColor: Colors.grey[900],
+              title: const Text(
+                '🎯 Personalize seu personagem',
+                style: TextStyle(color: Colors.amber),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Pontos restantes: $pontosDeAtributo',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  const SizedBox(height: 10),
+                  ...atributos.keys.map((key) {
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '$key: ${atributos[key]}',
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.add,
+                            color: Colors.greenAccent,
+                          ),
+                          onPressed: pontosDeAtributo > 0
+                              ? () {
+                                  setModalState(() {
+                                    atributos[key] = (atributos[key] ?? 0) + 1;
+                                    pontosDeAtributo--;
+                                  });
+                                }
+                              : null,
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: pontosDeAtributo == 0
+                      ? () {
+                          Navigator.of(context).pop();
+                          AtributosStorage.salvar(atributos);
+                          AtributosStorage.salvarPontos(pontosDeAtributo);
+                          AtributosStorage.salvarDistribuicaoInicial(true);
+                          setState(() {
+                            distribuiuPontosIniciais = true;
+                          });
+                        }
+                      : null,
+                  child: const Text(
+                    'Confirmar',
+                    style: TextStyle(color: Colors.amber),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   void navigateWithTransition(BuildContext context, Widget page) {
     Navigator.push(
@@ -147,12 +347,11 @@ $reqText
         pageBuilder: (_, __, ___) => page,
         transitionsBuilder: (_, animation, __, child) {
           const curve = Curves.easeInOut;
-          var tween =
-              Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: curve));
-          return FadeTransition(
-            opacity: animation.drive(tween),
-            child: child,
-          );
+          var tween = Tween(
+            begin: 0.0,
+            end: 1.0,
+          ).chain(CurveTween(curve: curve));
+          return FadeTransition(opacity: animation.drive(tween), child: child);
         },
       ),
     );
@@ -168,8 +367,7 @@ $reqText
       pageBuilder: (context, animation, secondaryAnimation) {
         return Center(
           child: ScaleTransition(
-            scale:
-                CurvedAnimation(parent: animation, curve: Curves.elasticOut),
+            scale: CurvedAnimation(parent: animation, curve: Curves.elasticOut),
             child: Container(
               width: 300,
               padding: const EdgeInsets.all(20),
@@ -181,7 +379,7 @@ $reqText
                     color: Colors.white.withOpacity(0.3),
                     blurRadius: 20,
                     spreadRadius: 5,
-                  )
+                  ),
                 ],
               ),
               child: Material(
@@ -189,20 +387,25 @@ $reqText
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(title,
-                        style: const TextStyle(
-                            color: Colors.amber,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold)),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.amber,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 10),
-                    Text(message,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.white)),
+                    Text(
+                      message,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white),
+                    ),
                     const SizedBox(height: 20),
                     ElevatedButton(
                       onPressed: () => Navigator.pop(context),
                       child: const Text('Ok'),
-                    )
+                    ),
                   ],
                 ),
               ),
@@ -212,20 +415,61 @@ $reqText
       },
       transitionBuilder: (context, animation, secondaryAnimation, child) {
         return FadeTransition(
-          opacity: CurvedAnimation(
-            parent: animation,
-            curve: Curves.easeInOut,
-          ),
+          opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
           child: child,
         );
       },
     );
   }
 
-  void applyChanges(Map<String, dynamic> selected, String description) {
+  void atualizarAno() {
+    final int anoReal = DateTime.now().year;
+    final int anosPassados = idade.floor() - 18;
+    anoAtual = anoReal + anosPassados;
+    if (anoAtual != anoAnterior) {
+      anoAnterior = anoAtual;
+      eventosMostradosEsteAno.clear();
+      acoesExecutadasEsteAno.clear();
+      eventoDoTrimestreJaMostrado.updateAll((_, __) => false);
+      eventosMostradosPorTrimestre.updateAll((_, __) => {});
+      totalAcoesDesdeInicioTrimestre = 0;
+    }
+  }
+
+  void checkEventoTrimestral() {
+    final int minimoAcoesEntreEventos = 3;
+    final trimestreAtual = ((idade * 100).floor() % 100) ~/ 20 + 1;
+
+    if (eventoDoTrimestreJaMostrado[trimestreAtual] == true ||
+        totalAcoesDesdeInicioTrimestre < minimoAcoesEntreEventos)
+      return;
+
+    for (var evento in trimestreEvento.keys) {
+      if (trimestreEvento[evento] == trimestreAtual &&
+          !eventosMostradosPorTrimestre[trimestreAtual]!.contains(evento)) {
+        eventosMostradosEsteAno.add(evento);
+        eventosMostradosPorTrimestre[trimestreAtual]!.add(evento);
+        ultimaOcorrenciaEvento[evento] = idade;
+        eventoDoTrimestreJaMostrado[trimestreAtual] = true;
+        showEventoEspecial(evento, contaComoAcao: false);
+        break;
+      }
+    }
+  }
+
+  void applyChanges(Map<String, dynamic> selected, String description) async {
+    if (isProcessing) return;
+    isProcessing = true;
+
     int gasto = ((selected['dinheiro'] ?? 0) as num).toInt();
+
     if (dinheiro + gasto < 0) {
-      showDialogMessage('Sem grana', 'Você não tem dinheiro suficiente.');
+      setState(() {
+        story.add(
+          "$anoAtual: Quis participar, mas não tinha dinheiro suficiente para a ação.",
+        );
+      });
+      isProcessing = false;
       return;
     }
 
@@ -233,32 +477,42 @@ $reqText
     xp += pontos;
     if (pontos != 0) {
       triggerStatusAnim('xp');
-      pontosDeAtributo += (pontos ~/ 5);
-      AtributosStorage.salvarPontos(pontosDeAtributo);
+      pontosDeAtributo += (pontos ~/ 15);
+      triggerStatusAnim('atributos');
     }
 
+    AtributosStorage.salvar(atributos);
+    AtributosStorage.salvarPontos(pontosDeAtributo);
+
+    dinheiro += gasto;
+    final intel = ((selected['inteligencia'] ?? 0) as num).toInt();
+    inteligencia += intel;
+    final feliz = ((selected['felicidade'] ?? 0) as num).toInt();
+    felicidade += feliz;
+    final vida = ((selected['saude'] ?? 0) as num).toInt();
+    saude += vida;
+    idade += 0.01;
+
+    bool contaComoAcao = selected['contaComoAcao'] ?? true;
+    if (contaComoAcao) {
+      acoesDesdeUltimoEvento++;
+      totalAcoesDesdeInicioTrimestre++;
+    }
+
+    atualizarAno();
+
     setState(() {
-      dinheiro += gasto;
       if (gasto != 0) triggerStatusAnim('dinheiro');
-
-      final intel = ((selected['inteligencia'] ?? 0) as num).toInt();
-      inteligencia += intel;
       if (intel != 0) triggerStatusAnim('inteligencia');
-
-      final feliz = ((selected['felicidade'] ?? 0) as num).toInt();
-      felicidade += feliz;
       if (feliz != 0) triggerStatusAnim('felicidade');
-
-      final vida = ((selected['saude'] ?? 0) as num).toInt();
-      saude += vida;
       if (vida != 0) triggerStatusAnim('saude');
 
-      idade += 0.05;
-
-      story.add("${DateTime.now().year + idade.floor() - 18}: $description");
-
+      story.add("$anoAtual: $description");
+      checkEventoTrimestral();
       updateCargo();
     });
+
+    isProcessing = false;
   }
 
   void triggerStatusAnim(String status) async {
@@ -266,43 +520,65 @@ $reqText
     statusControllers[status]?.forward(from: 0);
   }
 
-void checkConsequences() {
-  if (felicidade <= 0) {
-    showDialogMessage('😢 Tristeza!',
-        'Sua felicidade está muito baixa. Cuide do seu bem-estar!');
+  void checkConsequences() {
+    if (felicidade <= 0) {
+      showDialogMessage(
+        '😢 Tristeza!',
+        'Sua felicidade está muito baixa. Cuide do seu bem-estar!',
+      );
+    }
+    if (saude <= 0) {
+      showDialogMessage(
+        '🏥 Problema de Saúde!',
+        'Sua saúde está crítica. Você precisa descansar e se cuidar!',
+      );
+    }
+    if (dinheiro <= 0) {
+      showDialogMessage(
+        '💸 Falência!',
+        'Você ficou sem dinheiro. Faça trabalhos ou organize eventos para arrecadar fundos!',
+      );
+    }
   }
-  if (saude <= 0) {
-    showDialogMessage('🏥 Problema de Saúde!',
-        'Sua saúde está crítica. Você precisa descansar e se cuidar!');
-  }
-  if (dinheiro <= 0) {
-    showDialogMessage('💸 Falência!',
-        'Você ficou sem dinheiro. Faça trabalhos ou organize eventos para arrecadar fundos!');
-  }
-}
 
-void showDialogMessage(String title, String message) {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(title),
-      content: Text(message),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('OK'),
-        ),
-      ],
-    ),
-  );
-}
+  void showDialogMessage(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
 
-void updateCargo() {
+  void updateCargo() {
+    final anoAtual = DateTime.now().year + idade.floor() - 18;
+
     for (var c in cargos) {
-      final nomeCargo = c['nome'];
-      final xpReq = c['xp'];
+      final String nomeCargo = c['nome'];
+      final int xpReq = c['xp'];
       final requisitos = Map<String, int>.from(c['requisitos'] ?? {});
-      if (xp >= xpReq && requisitos.entries.every((e) => (atributos[e.key] ?? 0) >= e.value) && cargos.indexWhere((e) => e['nome'] == cargo) < cargos.indexOf(c) && nomeCargo != ultimoCargoOferecido) {
+
+      final elegivel =
+          xp >= xpReq &&
+          requisitos.entries.every((e) => (atributos[e.key] ?? 0) >= e.value);
+
+      final cargoAtualEhInferior =
+          cargos.indexWhere((e) => e['nome'] == cargo) < cargos.indexOf(c);
+
+      final recusadoRecentemente =
+          (cargosRecusados[nomeCargo] ?? 0) >= anoAtual;
+
+      if (elegivel &&
+          cargoAtualEhInferior &&
+          nomeCargo != ultimoCargoOferecido &&
+          !recusadoRecentemente) {
         ultimoCargoOferecido = nomeCargo;
         _oferecerPromocao(nomeCargo, xpReq, requisitos);
         break;
@@ -310,33 +586,116 @@ void updateCargo() {
     }
   }
 
-void _oferecerPromocao(String novoCargo, int xpNecessario, Map<String, int> requisitos) {
-    final requisitosTexto = requisitos.entries.map((e) => "- ${e.key}: ${atributos[e.key] ?? 0}/${e.value}").join('\n');
+  void _oferecerPromocao(
+    String novoCargo,
+    int xpNecessario,
+    Map<String, int> requisitos,
+  ) {
+    final anoAtual = DateTime.now().year + idade.floor() - 18;
+    final requisitosTexto = requisitos.entries
+        .map((e) => "- ${e.key}: ${atributos[e.key] ?? 0}/${e.value}")
+        .join('\n');
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Nova oportunidade: $novoCargo'),
-        content: Text('Você atingiu os requisitos para o cargo de $novoCargo!\n\nRequisitos:\n$requisitosTexto\n\nDeseja aceitar a promoção?'),
+        backgroundColor: Colors.grey[900],
+        title: Text(
+          'Nova oportunidade: $novoCargo',
+          style: const TextStyle(color: Colors.amber),
+        ),
+        content: Text(
+          'Você atingiu os requisitos para o cargo de $novoCargo!\n\n'
+          'XP atual: $xp / Requerido: $xpNecessario\n\n'
+          'Requisitos de atributos:\n$requisitosTexto\n\n'
+          'Deseja aceitar a promoção?',
+          style: const TextStyle(color: Colors.white70),
+        ),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               setState(() {
                 cargo = novoCargo;
-                story.add("${DateTime.now().year + idade.floor() - 18}: Promovido(a) a $cargo!");
+                story.add(
+                  "$anoAtual: Aceitou o desafio e assumiu o cargo de $cargo com entusiasmo.",
+                );
                 _confettiController.play();
               });
             },
-            child: const Text('Aceitar'),
+            child: const Text(
+              'Aceitar',
+              style: TextStyle(color: Colors.greenAccent),
+            ),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               setState(() {
                 xp = (xp / 2).floor();
-                story.add("${DateTime.now().year + idade.floor() - 18}: Recusou promoção para $novoCargo e perdeu metade do XP.");
+                cargosRecusados[novoCargo] = anoAtual;
+                story.add(
+                  "$anoAtual: Recusou a chance de se tornar $novoCargo naquele momento e perdeu metade do XP.",
+                );
               });
+            },
+            child: const Text(
+              'Recusar',
+              style: TextStyle(color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void showEventoEspecial(String nomeEvento, {bool contaComoAcao = true}) {
+    final Map<String, String> descricoesEventos = {
+      'JALC':
+          'Jornada de Aprendizado e Liderança do Clube. Um dos maiores eventos de formação para jovens líderes.',
+      'SEDEL':
+          'Seminário de Desenvolvimento de Lideranças. Um espaço para fortalecer competências e valores do movimento.',
+      'ACAMPALEO':
+          'Acampamento LEO de integração e vivências ao ar livre com outros clubes.',
+      'Encontro de Região':
+          'Reunião entre clubes da mesma região para alinhar projetos e fortalecer laços.',
+      'CONFE':
+          'Conferência Final de Encerramento. Celebração anual dos resultados e trajetórias dos membros.',
+    };
+
+    final descricao =
+        descricoesEventos[nomeEvento] ?? 'Evento especial do clube.';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Text(
+          '📅 Evento Especial: $nomeEvento',
+          style: const TextStyle(color: Colors.amber),
+        ),
+        content: Text(
+          '$descricao\n\nVocê foi convidado para o evento $nomeEvento! Deseja participar? Custa 30 de dinheiro.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              applyChanges({
+                'xp': 15,
+                'felicidade': 10,
+                'dinheiro': -30,
+                'contaComoAcao':
+                    contaComoAcao, // <<< Aqui é o ponto importante!
+              }, 'Participou do evento $nomeEvento.');
+            },
+            child: const Text('Participar'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              story.add("$anoAtual: Recusou o evento $nomeEvento.");
             },
             child: const Text('Recusar'),
           ),
@@ -345,19 +704,15 @@ void _oferecerPromocao(String novoCargo, int xpNecessario, Map<String, int> requ
     );
   }
 
-void checkRandomEvent() {
-    final chance = random.nextInt(100);
-    if (chance < 20) {
-      showRandomDialog();
-    }
-}
-
   void showRandomDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.grey[900],
-        title: const Text('🤔 Evento Aleatório', style: TextStyle(color: Colors.amber)),
+        title: const Text(
+          '🤔 Evento Aleatório',
+          style: TextStyle(color: Colors.amber),
+        ),
         content: const Text(
           'Você foi convidado para uma reunião surpresa do clube. Deseja participar?',
           style: TextStyle(color: Colors.white70),
@@ -366,14 +721,19 @@ void checkRandomEvent() {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              applyChanges({'xp': 10, 'felicidade': 5}, 'Participou de uma reunião surpresa do clube.');
+              applyChanges({
+                'xp': 10,
+                'felicidade': 5,
+              }, 'Participou de uma reunião surpresa do clube.');
             },
             child: const Text('Participar'),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              story.add("${DateTime.now().year + idade.floor() - 18}: Você ignorou uma reunião do clube.");
+              story.add(
+                "${DateTime.now().year + idade.floor() - 18}: Você ignorou uma reunião do clube.",
+              );
             },
             child: const Text('Ignorar'),
           ),
@@ -413,62 +773,65 @@ void checkRandomEvent() {
         statusIcon(Icons.favorite, saude.toString(), 'saude'),
         statusIcon(Icons.emoji_emotions, felicidade.toString(), 'felicidade'),
         statusIcon(Icons.star, xp.toString(), 'xp'),
+        statusIcon(Icons.fitness_center, '$pontosDeAtributo', 'atributos'),
       ],
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: buildCustomAppBarWithActions(
-  title: 'C. LEO - ${widget.nome}',
-  actions: [
-    IconButton(
-      icon: const Icon(Icons.person),
-      onPressed: () {
-  Navigator.push(
-    context,
-    PageRouteBuilder(
-      transitionDuration: const Duration(milliseconds: 500),
-      pageBuilder: (_, __, ___) => ProfileScreen(
-        dinheiro: dinheiro,
-        inteligencia: inteligencia,
-        felicidade: felicidade,
-        saude: saude,
-        xp: xp,
-        idade: idade.floor(),
-        cargo: cargo,
-        pontosDeAtributo: pontosDeAtributo,
+        title: 'C. LEO - ${widget.nome}',
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              Navigator.push(
+                context,
+                PageRouteBuilder(
+                  transitionDuration: const Duration(milliseconds: 500),
+                  pageBuilder: (_, __, ___) => ProfileScreen(
+                    dinheiro: dinheiro,
+                    inteligencia: inteligencia,
+                    felicidade: felicidade,
+                    saude: saude,
+                    xp: xp,
+                    idade: idade.floor(),
+                    cargo: cargo,
+                    pontosDeAtributo: pontosDeAtributo,
+                  ),
+                  transitionsBuilder: (_, animation, __, child) {
+                    const curve = Curves.easeInOut;
+                    final tween = Tween(
+                      begin: 0.0,
+                      end: 1.0,
+                    ).chain(CurveTween(curve: curve));
+                    return FadeTransition(
+                      opacity: animation.drive(tween),
+                      child: child,
+                    );
+                  },
+                ),
+              ).then((_) async {
+                final novosAtributos = await AtributosStorage.carregar();
+                final novosPontos = await AtributosStorage.carregarPontos();
+                setState(() {
+                  atributos = novosAtributos;
+                  pontosDeAtributo = novosPontos;
+                });
+                updateCargo(); // verificar promoção após voltar
+              });
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.emoji_events),
+            onPressed: () {
+              navigateWithTransition(context, ConquistasScreen());
+            },
+          ),
+        ],
       ),
-      transitionsBuilder: (_, animation, __, child) {
-        const curve = Curves.easeInOut;
-        final tween = Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: curve));
-        return FadeTransition(opacity: animation.drive(tween), child: child);
-      },
-    ),
-  ).then((_) async {
-    final novosAtributos = await AtributosStorage.carregar();
-final novosPontos = await AtributosStorage.carregarPontos();
-setState(() {
-  atributos = novosAtributos;
-  pontosDeAtributo = novosPontos;
-});
-updateCargo(); // verificar promoção após voltar
-  });
-},
-    ),
-    IconButton(
-        icon: const Icon(Icons.emoji_events),
-  onPressed: () {
-    navigateWithTransition(
-      context,
-      ConquistasScreen(conquistas: conquistas),
-    );
-  },
-    ),
-  ],
-),
 
       body: AnimatedBuilder(
         animation: _colorController,
@@ -491,7 +854,9 @@ updateCargo(); // verificar promoção após voltar
                     // Header com Status
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(20),
                         child: BackdropFilter(
@@ -505,22 +870,28 @@ updateCargo(); // verificar promoção após voltar
                       ),
                     ),
                     Padding(
-  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-  child: ClipRRect(
-    borderRadius: BorderRadius.circular(12),
-    child: BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-      child: Container(
-        color: Colors.white.withOpacity(0.05),
-        padding: const EdgeInsets.all(12),
-        child: Text(
-          getProximoCargoPreview(),
-          style: const TextStyle(color: Colors.white70, fontSize: 14),
-        ),
-      ),
-    ),
-  ),
-),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: Container(
+                            color: Colors.white.withOpacity(0.05),
+                            padding: const EdgeInsets.all(12),
+                            child: Text(
+                              getProximoCargoPreview(),
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
 
                     // Feed
                     Expanded(
@@ -530,12 +901,16 @@ updateCargo(); // verificar promoção após voltar
                         itemBuilder: (context, index) {
                           return Padding(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(20),
                               child: BackdropFilter(
-                                filter:
-                                    ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                filter: ImageFilter.blur(
+                                  sigmaX: 10,
+                                  sigmaY: 10,
+                                ),
                                 child: Container(
                                   color: Colors.white.withOpacity(0.05),
                                   padding: const EdgeInsets.all(16),
@@ -562,42 +937,35 @@ updateCargo(); // verificar promoção após voltar
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.amber,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(30)),
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
                               ),
                               onPressed: () {
                                 navigateWithTransition(
                                   context,
                                   ActionsScreen(
-                                      onActionSelected: applyChanges,
-                                      onShowInfo: (info) => showDialogMessage('Info: ',info),
+                                    onActionSelected: applyChanges,
+                                    onShowInfo: (info) =>
+                                        showDialogMessage('Info: ', info),
                                   ),
                                 );
                               },
                               child: const Text(
                                 'Escolher Ação',
                                 style: TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold),
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.redAccent,
-                              shape: const CircleBorder(),
-                              padding: const EdgeInsets.all(16),
-                            ),
-                            onPressed: () {},
-                            child:
-                                const Icon(Icons.refresh, color: Colors.white),
-                          ),
                         ],
                       ),
-                    )
+                    ),
                   ],
                 ),
               ),

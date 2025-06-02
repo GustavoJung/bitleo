@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'screens/main_menu.dart';
 import 'screens/splash_screen.dart';
 
 void main() {
@@ -12,11 +11,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'LEO Clube Game',
+      title: 'Vida de LEO Clube',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.amber,
-      ),
+      theme: ThemeData.dark(),
       home: const SplashScreen(),
     );
   }
