@@ -2,6 +2,7 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'actions_screen.dart';
 import 'profile_screen.dart';
 import 'conquistas_screen.dart';
@@ -28,6 +29,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   int xp = 0;
   late int anoAtual;
   int anoAnterior = 0;
+  int xpAnteriorParaPontos = 0;
   int acoesDesdeUltimoEvento = 0;
   int totalAcoesDesdeInicioTrimestre = 0;
   Set<String> eventosMostradosEsteAno = {};
@@ -89,7 +91,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     'Organização': 0,
   };
   bool isProcessing = false;
-
+  bool dadosCarregados = false;
   late final List<Map<String, dynamic>> cargos = [
     {
       'xp': 50,
@@ -141,33 +143,51 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-
     final int anoReal = DateTime.now().year;
     anoAtual = anoReal;
     anoAnterior = anoReal;
 
-    AtributosStorage.verificarInicializacao();
+    () async {
+      await AtributosStorage.verificarInicializacao();
 
-    AtributosStorage.carregar().then((dados) {
-      setState(() => atributos = dados);
-      updateCargo();
-    });
+      final results = await Future.wait([
+        AtributosStorage.carregarStatus(),
+        AtributosStorage.carregar(),
+        AtributosStorage.carregarDistribuicaoInicial(),
+        AtributosStorage.carregarPontos(),
+        AtributosStorage.carregarUltimoXPParaPontos(),
+      ]);
 
-    AtributosStorage.carregarDistribuicaoInicial().then((distribuiu) {
-      distribuiuPontosIniciais = distribuiu;
-      AtributosStorage.carregarPontos().then((p) {
-        print('carregarPontos: $p | distribuiu: $distribuiuPontosIniciais');
+      final status = results[0] as Map<String, dynamic>;
+      final dados = results[1] as Map<String, int>;
+      final distribuiu = results[2] as bool;
+      final p = results[3] as int;
+      final ultimoXP = results[4] as int;
+
+      setState(() {
+        dinheiro = status['dinheiro'] ?? dinheiro;
+        inteligencia = status['inteligencia'] ?? inteligencia;
+        felicidade = status['felicidade'] ?? felicidade;
+        saude = status['saude'] ?? saude;
+        xp = status['xp'] ?? xp;
+        idade = (status['idade'] ?? idade).toDouble();
+        cargo = status['cargo'] ?? cargo;
+
+        atributos = dados;
+        distribuiuPontosIniciais = distribuiu;
         pontosDeAtributo = p;
-        if (p == 3 && !distribuiuPontosIniciais) {
-          distribuiuPontosIniciais = true;
-          AtributosStorage.salvarDistribuicaoInicial(true);
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            showDistribuicaoInicial();
-          });
-        }
-        setState(() {});
+        xpAnteriorParaPontos = ultimoXP;
+        dadosCarregados = true;
       });
-    });
+
+      if (p == 3 && !distribuiu) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          showDistribuicaoInicial();
+        });
+      }
+
+      updateCargo();
+    }();
 
     _colorController = AnimationController(
       vsync: this,
@@ -230,6 +250,18 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 .chain(CurveTween(curve: Curves.easeInOut))
                 .animate(statusControllers[key]!),
     };
+  }
+
+  void salvarDadosStatus() {
+    AtributosStorage.salvarStatus({
+      'dinheiro': dinheiro,
+      'inteligencia': inteligencia,
+      'felicidade': felicidade,
+      'saude': saude,
+      'idade': idade,
+      'xp': xp,
+      'cargo': cargo,
+    });
   }
 
   @override
@@ -303,6 +335,8 @@ $reqText
                               ? () {
                                   setModalState(() {
                                     atributos[key] = (atributos[key] ?? 0) + 1;
+                                  });
+                                  setState(() {
                                     pontosDeAtributo--;
                                   });
                                 }
@@ -315,17 +349,50 @@ $reqText
               ),
               actions: [
                 TextButton(
-                  onPressed: pontosDeAtributo == 0
-                      ? () {
-                          Navigator.of(context).pop();
-                          AtributosStorage.salvar(atributos);
-                          AtributosStorage.salvarPontos(pontosDeAtributo);
-                          AtributosStorage.salvarDistribuicaoInicial(true);
-                          setState(() {
-                            distribuiuPontosIniciais = true;
-                          });
-                        }
-                      : null,
+                  onPressed: () async {
+                    if (pontosDeAtributo > 0) {
+                      final continuar = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          backgroundColor: Colors.grey[850],
+                          title: const Text(
+                            'Pontos restantes',
+                            style: TextStyle(color: Colors.amber),
+                          ),
+                          content: Text(
+                            'Você ainda tem $pontosDeAtributo ponto(s) não distribuído(s).\nDeseja continuar mesmo assim?',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(false),
+                              child: const Text(
+                                'Cancelar',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(true),
+                              child: const Text(
+                                'Confirmar',
+                                style: TextStyle(color: Colors.green),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (continuar != true) return;
+                    }
+                    if (!dadosCarregados) return;
+                    Navigator.of(context).pop();
+                    await AtributosStorage.salvar(atributos);
+                    await AtributosStorage.salvarPontos(pontosDeAtributo);
+                    await AtributosStorage.salvarDistribuicaoInicial(true);
+                    setState(() {
+                      distribuiuPontosIniciais = true;
+                    });
+                  },
                   child: const Text(
                     'Confirmar',
                     style: TextStyle(color: Colors.amber),
@@ -458,7 +525,7 @@ $reqText
   }
 
   void applyChanges(Map<String, dynamic> selected, String description) async {
-    if (isProcessing) return;
+    if (!dadosCarregados || isProcessing) return;
     isProcessing = true;
 
     int gasto = ((selected['dinheiro'] ?? 0) as num).toInt();
@@ -475,10 +542,13 @@ $reqText
 
     final pontos = ((selected['xp'] ?? 0) as num).toInt();
     xp += pontos;
-    if (pontos != 0) {
-      triggerStatusAnim('xp');
-      pontosDeAtributo += (pontos ~/ 15);
+
+    int ganho = ((xp - xpAnteriorParaPontos) ~/ 15);
+    if (ganho > 0) {
+      pontosDeAtributo += ganho;
+      xpAnteriorParaPontos += ganho * 15;
       triggerStatusAnim('atributos');
+      AtributosStorage.salvarUltimoXPParaPontos(xpAnteriorParaPontos);
     }
 
     AtributosStorage.salvar(atributos);
@@ -498,6 +568,16 @@ $reqText
       acoesDesdeUltimoEvento++;
       totalAcoesDesdeInicioTrimestre++;
     }
+
+    AtributosStorage.salvarStatus({
+      'dinheiro': dinheiro,
+      'inteligencia': inteligencia,
+      'felicidade': felicidade,
+      'saude': saude,
+      'xp': xp,
+      'idade': idade,
+      'cargo': cargo,
+    });
 
     atualizarAno();
 
@@ -791,16 +871,7 @@ $reqText
                 context,
                 PageRouteBuilder(
                   transitionDuration: const Duration(milliseconds: 500),
-                  pageBuilder: (_, __, ___) => ProfileScreen(
-                    dinheiro: dinheiro,
-                    inteligencia: inteligencia,
-                    felicidade: felicidade,
-                    saude: saude,
-                    xp: xp,
-                    idade: idade.floor(),
-                    cargo: cargo,
-                    pontosDeAtributo: pontosDeAtributo,
-                  ),
+                  pageBuilder: (_, __, ___) => const ProfileScreen(),
                   transitionsBuilder: (_, animation, __, child) {
                     const curve = Curves.easeInOut;
                     final tween = Tween(

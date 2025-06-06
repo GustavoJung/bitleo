@@ -6,27 +6,15 @@ Map<String, Map<String, String>> clubesInfo = {
   'LEO Clube Ômega Seara Centenário': {
     'regiao': 'Região B',
     'distrito': 'LD-8',
-    'regiaoDesc': 'Região B é conhecida pelo seu espírito inovador e união entre clubes.',
-    'distritoDesc': 'O Distrito LD-8 abrange diversos clubes do sul do Brasil, com forte tradição no movimento LEO.'
+    'regiaoDesc':
+        'Região B é conhecida pelo seu espírito inovador e união entre clubes.',
+    'distritoDesc':
+        'O Distrito LD-8 abrange diversos clubes do sul do Brasil, com forte tradição no movimento LEO.',
   },
-  // Adicione mais clubes conforme necessário
 };
 
 class ProfileScreen extends StatefulWidget {
-  final int dinheiro, inteligencia, felicidade, saude, xp, idade, pontosDeAtributo;
-  final String cargo;
-
-  const ProfileScreen({
-    super.key,
-    required this.dinheiro,
-    required this.inteligencia,
-    required this.felicidade,
-    required this.saude,
-    required this.xp,
-    required this.idade,
-    required this.cargo,
-    required this.pontosDeAtributo,
-  });
+  const ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -46,6 +34,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   };
 
   int pontosRestantes = 0;
+  int dinheiro = 0;
+  int inteligencia = 0;
+  int felicidade = 0;
+  int saude = 0;
+  int xp = 0;
+  int idade = 18;
+  String cargo = 'Pré-LEO';
 
   @override
   void initState() {
@@ -54,11 +49,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> carregarDados() async {
+    final status = await AtributosStorage.carregarStatus();
     final a = await AtributosStorage.carregar();
     final p = await AtributosStorage.carregarPontos();
     setState(() {
       atributos = a;
       pontosRestantes = p;
+      dinheiro = status['dinheiro'] ?? 0;
+      inteligencia = status['inteligencia'] ?? 0;
+      felicidade = status['felicidade'] ?? 0;
+      saude = status['saude'] ?? 0;
+      xp = status['xp'] ?? 0;
+      idade = status['idade'] ?? 18;
+      cargo = status['cargo'] ?? 'Pré-LEO';
     });
   }
 
@@ -69,7 +72,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.grey[900],
-        title: const Text('Atualizar Clube', style: TextStyle(color: Colors.amber)),
+        title: const Text(
+          'Atualizar Clube',
+          style: TextStyle(color: Colors.amber),
+        ),
         content: TextField(
           controller: _controller,
           style: const TextStyle(color: Colors.white),
@@ -87,7 +93,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar', style: TextStyle(color: Colors.white70)),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(color: Colors.white70),
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -127,14 +136,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Center(
               child: Column(
                 children: [
-                  const Icon(Icons.emoji_events, color: Colors.amber, size: 100),
+                  const Icon(
+                    Icons.emoji_events,
+                    color: Colors.amber,
+                    size: 100,
+                  ),
                   const SizedBox(height: 10),
-                  Text(widget.cargo, style: const TextStyle(color: Colors.amber, fontSize: 22, fontWeight: FontWeight.bold)),
+                  Text(
+                    cargo,
+                    style: const TextStyle(
+                      color: Colors.amber,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text('${widget.idade} anos', style: const TextStyle(color: Colors.white70)),
+                  Text(
+                    '$idade anos',
+                    style: const TextStyle(color: Colors.white70),
+                  ),
                   TextButton(
                     onPressed: () => _showEditDialog(context),
-                    child: const Text('Atualizar Clube', style: TextStyle(color: Colors.amber)),
+                    child: const Text(
+                      'Atualizar Clube',
+                      style: TextStyle(color: Colors.amber),
+                    ),
                   ),
                 ],
               ),
@@ -143,21 +169,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
             infoCard(Icons.map, 'Região', regiaoDesc),
             infoCard(Icons.location_city, 'Distrito $distrito', distritoDesc),
             const SizedBox(height: 30),
-            const SizedBox(height: 20),
             Wrap(
               spacing: 12,
               runSpacing: 12,
               children: [
-                infoCardWrap(Icons.attach_money, 'Dinheiro', 'R\$ ${widget.dinheiro}'),
-                infoCardWrap(Icons.school, 'Inteligência', widget.inteligencia.toString()),
-                infoCardWrap(Icons.emoji_emotions, 'Felicidade', widget.felicidade.toString()),
-                infoCardWrap(Icons.favorite, 'Saúde', widget.saude.toString()),
-                infoCardWrap(Icons.star, 'Experiência', '${widget.xp} XP'),
+                infoCardWrap(Icons.attach_money, 'Dinheiro', 'R\$ $dinheiro'),
+                infoCardWrap(
+                  Icons.school,
+                  'Inteligência',
+                  inteligencia.toString(),
+                ),
+                infoCardWrap(
+                  Icons.emoji_emotions,
+                  'Felicidade',
+                  felicidade.toString(),
+                ),
+                infoCardWrap(Icons.favorite, 'Saúde', saude.toString()),
+                infoCardWrap(Icons.star, 'Experiência', '$xp XP'),
               ],
             ),
             const SizedBox(height: 30),
-            const Text('Atributos', style: TextStyle(color: Colors.amber, fontSize: 22, fontWeight: FontWeight.bold)),
-            Text('Pontos restantes: $pontosRestantes', style: const TextStyle(color: Colors.white70)),
+            const Text(
+              'Atributos',
+              style: TextStyle(
+                color: Colors.amber,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              'Pontos restantes: $pontosRestantes',
+              style: const TextStyle(color: Colors.white70),
+            ),
             atributoCard('Oratória'),
             atributoCard('Liderança'),
             atributoCard('Empatia'),
@@ -167,12 +210,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+
   Widget infoCardWrap(IconData icon, String label, String value) {
-  return SizedBox(
-    width: (MediaQuery.of(context).size.width / 2) - 36,
-    child: infoCard(icon, label, value),
-  );
-}
+    return SizedBox(
+      width: (MediaQuery.of(context).size.width / 2) - 36,
+      child: infoCard(icon, label, value),
+    );
+  }
 
   Widget infoCard(IconData icon, String label, String value) {
     return Card(
@@ -181,8 +225,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ListTile(
         leading: Icon(icon, color: Colors.amber, size: 32),
-        title: Text(label, style: const TextStyle(color: Colors.white, fontSize: 18)),
-        subtitle: Text(value, style: const TextStyle(fontSize: 16, color: Colors.white70)),
+        title: Text(
+          label,
+          style: const TextStyle(color: Colors.white, fontSize: 18),
+        ),
+        subtitle: Text(
+          value,
+          style: const TextStyle(fontSize: 16, color: Colors.white70),
+        ),
       ),
     );
   }
@@ -201,7 +251,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(nome, style: const TextStyle(color: Colors.amber, fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              nome,
+              style: const TextStyle(
+                color: Colors.amber,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 6),
             LinearProgressIndicator(
               value: progresso.clamp(0.0, 1.0),

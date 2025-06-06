@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/atributos_storage.dart';
 import 'game_screen.dart';
 import 'name_screen.dart';
@@ -38,7 +39,10 @@ class _SplashScreenState extends State<SplashScreen>
       var pontos = await AtributosStorage.carregarPontos();
       debugPrint('🟢 Pontos carregados inicialmente: $pontos');
 
-      if (pontos == 0) {
+      final prefs = await SharedPreferences.getInstance();
+      final jaIniciou = prefs.getBool('atributosIniciaisSalvos') ?? false;
+
+      if (!jaIniciou) {
         await AtributosStorage.salvarPontos(3);
         await AtributosStorage.salvar({
           'Oratória': 0,
@@ -46,6 +50,7 @@ class _SplashScreenState extends State<SplashScreen>
           'Empatia': 0,
           'Organização': 0,
         });
+        await prefs.setBool('atributosIniciaisSalvos', true);
         pontos = 3;
       }
 
