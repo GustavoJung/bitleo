@@ -101,31 +101,35 @@ class ActionsScreen extends StatelessWidget {
     final List<Map<String, dynamic>> actions = [
       {
         'label': 'Trabalhar',
-        'description': 'Ganhe dinheiro trabalhando.',
+        'description': 'Ganhe dinheiro, mas fique um pouco mais estressado.',
         'icon': Icons.work,
         'effects': {'dinheiro': 20, 'felicidade': -3, 'xp': 3},
+        'info': 'Trabalhar aumenta sua renda, necessário para eventos e ações.',
       },
       {
         'label': 'Estudar',
-        'description': 'Melhore sua inteligência.',
+        'description': 'Aumente sua inteligência e XP com dedicação.',
         'icon': Icons.school,
         'effects': {'inteligencia': 5, 'felicidade': -2, 'xp': 3},
+        'info': 'Estudar ajuda a atingir cargos que exigem inteligência.',
       },
       {
         'label': 'Campanha',
-        'description': 'Ajude a comunidade e ganhe XP.',
+        'description': 'Engaje a comunidade e evolua no clube.',
         'icon': Icons.volunteer_activism,
         'effects': {'felicidade': 5, 'xp': 5, 'dinheiro': -10},
+        'info': 'Realizar campanhas dá XP para crescer no clube.',
       },
       {
         'label': 'Descansar',
-        'description': 'Recupere sua saúde e felicidade.',
+        'description': 'Recupere saúde e bem-estar. Todo líder precisa disso!',
         'icon': Icons.bedtime,
         'effects': {'saude': 10, 'felicidade': 10, 'xp': 1},
+        'info': 'Essencial para manter felicidade e saúde equilibradas.',
       },
       {
         'label': 'Organizar Evento',
-        'description': 'Planeje um evento local do clube.',
+        'description': 'Mostre sua liderança e ganhe XP.',
         'icon': Icons.event,
         'effects': {
           'organização': 3,
@@ -133,31 +137,35 @@ class ActionsScreen extends StatelessWidget {
           'felicidade': 2,
           'dinheiro': -10,
         },
+        'info': 'Organizar eventos melhora sua organização e dá XP.',
       },
       {
         'label': 'Participar de Reunião',
-        'description': 'Participe de uma reunião do clube.',
+        'description': 'Melhore sua oratória e ganhe experiência.',
         'icon': Icons.groups,
         'effects': {'oratória': 2, 'xp': 3},
+        'info': 'Ótimo para desenvolver oratória e avançar nos cargos.',
       },
       {
         'label': 'Mentorar Novato',
-        'description': 'Ajude um novo membro a se integrar.',
+        'description': 'Aumente sua empatia e fortaleça o clube.',
         'icon': Icons.support,
         'effects': {'empatia': 3, 'xp': 4, 'felicidade': 2},
+        'info': 'Mentorar ajuda a crescer como líder e aumenta empatia.',
       },
       {
         'label': 'Redes Sociais',
-        'description': 'Crie conteúdo para divulgar as ações do clube.',
+        'description': 'Divulgue ações e mostre seu talento digital.',
         'icon': Icons.share,
         'effects': {'oratória': 2, 'organização': 1, 'xp': 4},
+        'info': 'Trabalhar com redes melhora oratória e organização.',
       },
       {
         'label': 'Reunião Distrital',
-        'description':
-            'Participe de uma reunião com outros clubes do distrito.',
+        'description': 'Interaja com outros clubes e expanda sua visão.',
         'icon': Icons.location_city,
         'effects': {'oratória': 3, 'empatia': 2, 'xp': 6, 'dinheiro': -15},
+        'info': 'Reuniões distritais são ótimas para conexões e XP.',
       },
     ];
 
@@ -216,7 +224,7 @@ class ActionsScreen extends StatelessWidget {
                           showInfoDialog(
                             context,
                             action['label'],
-                            action['description'],
+                            action['info'] ?? '',
                           );
                         },
                       ),

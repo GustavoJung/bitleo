@@ -39,7 +39,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int felicidade = 0;
   int saude = 0;
   int xp = 0;
-  int idade = 18;
+  double idade = 18;
   String cargo = 'Pré-LEO';
 
   @override
@@ -52,6 +52,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final status = await AtributosStorage.carregarStatus();
     final a = await AtributosStorage.carregar();
     final p = await AtributosStorage.carregarPontos();
+    final novoCargo = await AtributosStorage.carregarCargo();
     setState(() {
       atributos = a;
       pontosRestantes = p;
@@ -60,8 +61,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       felicidade = status['felicidade'] ?? 0;
       saude = status['saude'] ?? 0;
       xp = status['xp'] ?? 0;
-      idade = status['idade'] ?? 18;
-      cargo = status['cargo'] ?? 'Pré-LEO';
+      idade = (status['idade'] as num?)?.toDouble() ?? 18.0;
+      cargo = novoCargo;
     });
   }
 
@@ -152,7 +153,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '$idade anos',
+                    '${idade.toInt()} anos',
                     style: const TextStyle(color: Colors.white70),
                   ),
                   TextButton(

@@ -1,5 +1,5 @@
+import 'package:bitleo/services/atributos_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/custom_appbar.dart';
 
 class Conquista {
@@ -44,6 +44,38 @@ class _ConquistasScreenState extends State<ConquistasScreen> {
       descricao: 'Visitou todas as telas principais.',
     ),
     Conquista(titulo: 'Persistente', descricao: 'Realizou 10 ações no jogo.'),
+    Conquista(
+      titulo: 'Começando a Jornada',
+      descricao: 'Ganhou seus primeiros 10 de XP.',
+    ),
+    Conquista(
+      titulo: 'Primeiro Passo de Liderança',
+      descricao: 'Chegou a 50 de XP.',
+    ),
+    Conquista(titulo: 'Fala Bonita!', descricao: 'Atingiu 10 de Oratória.'),
+    Conquista(titulo: 'Líder Nato', descricao: 'Atingiu 10 de Liderança.'),
+    Conquista(titulo: 'Coração Aberto', descricao: 'Atingiu 10 de Empatia.'),
+    Conquista(
+      titulo: 'Organizado Demais',
+      descricao: 'Atingiu 10 de Organização.',
+    ),
+    Conquista(
+      titulo: 'Chegou ao Topo!',
+      descricao: 'Virou Presidente do clube.',
+    ),
+    Conquista(titulo: 'Sobreviveu à JALC', descricao: 'Participou da JALC.'),
+    Conquista(
+      titulo: 'Acampou com Estilo',
+      descricao: 'Participou do ACAMPALEO.',
+    ),
+    Conquista(
+      titulo: 'História em Construção',
+      descricao: 'Acumulou 10 entradas no histórico.',
+    ),
+    Conquista(
+      titulo: 'Se tornou Membro',
+      descricao: 'Foi empossado como membro.',
+    ),
   ];
 
   @override
@@ -53,19 +85,10 @@ class _ConquistasScreenState extends State<ConquistasScreen> {
   }
 
   Future<void> carregarConquistas() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    // Verifica se é a primeira vez que o app é aberto
-    final primeiraVez = prefs.getBool('primeiraVez') ?? true;
-    if (primeiraVez) {
-      await prefs.setBool('primeiraVez', false);
-      await prefs.setInt('pontosDeAtributo', 3);
-      await prefs.setBool('Primeiro Passo', true);
-    }
-
+    final conquistasSalvas = await AtributosStorage.carregarConquistas();
     setState(() {
       conquistas = conquistas.map((c) {
-        final desbloqueada = prefs.getBool(c.titulo) ?? false;
+        final desbloqueada = conquistasSalvas.contains(c.titulo);
         return Conquista(
           titulo: c.titulo,
           descricao: c.descricao,
