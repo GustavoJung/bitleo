@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'dart:ui';
+import 'package:bitleo/services/action_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -156,6 +157,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         AtributosStorage.carregarDistribuicaoInicial(),
         AtributosStorage.carregarPontos(),
         AtributosStorage.carregarUltimoXPParaPontos(),
+        AtributosStorage.carregarHistorico(),
       ]);
 
       final status = results[0] as Map<String, dynamic>;
@@ -163,6 +165,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       final distribuiu = results[2] as bool;
       final p = results[3] as int;
       final ultimoXP = results[4] as int;
+      final historico = results[5] as List<String>;
+      final conquistasSalvas = await AtributosStorage.carregarConquistas();
+
+      String auxCargo = await AtributosStorage.carregarCargo();
 
       setState(() {
         dinheiro = status['dinheiro'] ?? dinheiro;
@@ -171,12 +177,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         saude = status['saude'] ?? saude;
         xp = status['xp'] ?? xp;
         idade = (status['idade'] ?? idade).toDouble();
-        cargo = status['cargo'] ?? cargo;
-
+        cargo = auxCargo;
+        conquistas = conquistasSalvas;
         atributos = dados;
         distribuiuPontosIniciais = distribuiu;
         pontosDeAtributo = p;
         xpAnteriorParaPontos = ultimoXP;
+        story = historico;
         dadosCarregados = true;
       });
 
@@ -252,6 +259,16 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     };
   }
 
+  void adicionarConquista(String conquista) async {
+    if (!conquistas.contains(conquista)) {
+      setState(() {
+        conquistas.add(conquista);
+      });
+      await AtributosStorage.salvarConquistas(conquistas);
+      showAnimatedDialog('🏆 Nova Conquista!', conquista);
+    }
+  }
+
   void salvarDadosStatus() {
     AtributosStorage.salvarStatus({
       'dinheiro': dinheiro,
@@ -288,8 +305,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             .join('\n');
         return '''
 Próximo Cargo: $nomeCargo
-XP necessário: $xpRequerido (atual: $xp)
 Requisitos:
+- XP necessário: $xpRequerido
 $reqText
 ''';
       }
@@ -524,19 +541,25 @@ $reqText
     }
   }
 
-  void applyChanges(Map<String, dynamic> selected, String description) async {
+  Future<void> adicionarAoFeed(String texto) async {
+    setState(() {
+      story.add(texto);
+    });
+    await AtributosStorage.salvarHistorico(story);
+  }
+
+  void applyChanges(AcaoTipo tipo, Map<String, dynamic> selected) async {
     if (!dadosCarregados || isProcessing) return;
-    isProcessing = true;
+    setState(() => isProcessing = true);
 
     int gasto = ((selected['dinheiro'] ?? 0) as num).toInt();
 
     if (dinheiro + gasto < 0) {
-      setState(() {
-        story.add(
-          "$anoAtual: Quis participar, mas não tinha dinheiro suficiente para a ação.",
-        );
-      });
-      isProcessing = false;
+      adicionarAoFeed(
+        "$anoAtual: Quis participar, mas não tinha dinheiro suficiente para a ação.",
+      );
+      await AtributosStorage.salvarHistorico(story);
+      setState(() => isProcessing = false);
       return;
     }
 
@@ -580,19 +603,34 @@ $reqText
     });
 
     atualizarAno();
+    await adicionarAoFeed(
+      "$anoAtual: ${ActionMessageHelper.getRandomMessage(tipo)}",
+    );
+
+    ActionMessageHelper.aplicarConquistas(
+      tipo: tipo,
+      xp: xp,
+      atributos: atributos,
+      cargo: cargo,
+      story: story,
+      conquistasAtuais: conquistas,
+      novaConquista: (conquista) {
+        adicionarConquista(conquista); // salva e mostra confete
+        adicionarAoFeed("$anoAtual: Conquista desbloqueada: $conquista 🎉");
+      },
+    );
+
+    AtributosStorage.salvarConquistas(conquistas);
 
     setState(() {
       if (gasto != 0) triggerStatusAnim('dinheiro');
       if (intel != 0) triggerStatusAnim('inteligencia');
       if (feliz != 0) triggerStatusAnim('felicidade');
       if (vida != 0) triggerStatusAnim('saude');
-
-      story.add("$anoAtual: $description");
       checkEventoTrimestral();
       updateCargo();
+      isProcessing = false;
     });
-
-    isProcessing = false;
   }
 
   void triggerStatusAnim(String status) async {
@@ -695,9 +733,11 @@ $reqText
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              setState(() {
+              setState(() async {
                 cargo = novoCargo;
-                story.add(
+                await AtributosStorage.salvarCargo(novoCargo);
+                adicionarConquista("Se tornou $cargo");
+                adicionarAoFeed(
                   "$anoAtual: Aceitou o desafio e assumiu o cargo de $cargo com entusiasmo.",
                 );
                 _confettiController.play();
@@ -714,7 +754,7 @@ $reqText
               setState(() {
                 xp = (xp / 2).floor();
                 cargosRecusados[novoCargo] = anoAtual;
-                story.add(
+                adicionarAoFeed(
                   "$anoAtual: Recusou a chance de se tornar $novoCargo naquele momento e perdeu metade do XP.",
                 );
               });
@@ -731,21 +771,24 @@ $reqText
 
   void showEventoEspecial(String nomeEvento, {bool contaComoAcao = true}) {
     final Map<String, String> descricoesEventos = {
-      'JALC':
+      'EventoEspecialJALC':
           'Jornada de Aprendizado e Liderança do Clube. Um dos maiores eventos de formação para jovens líderes.',
-      'SEDEL':
+      'EventoEspecialSEDEL':
           'Seminário de Desenvolvimento de Lideranças. Um espaço para fortalecer competências e valores do movimento.',
-      'ACAMPALEO':
+      'EventoEspecialACAMPALEO':
           'Acampamento LEO de integração e vivências ao ar livre com outros clubes.',
-      'Encontro de Região':
+      'EventoEspecialEncontro de Região':
           'Reunião entre clubes da mesma região para alinhar projetos e fortalecer laços.',
-      'CONFE':
+      'EventoEspecialCONFE':
           'Conferência Final de Encerramento. Celebração anual dos resultados e trajetórias dos membros.',
     };
 
     final descricao =
         descricoesEventos[nomeEvento] ?? 'Evento especial do clube.';
-
+    AcaoTipo? tipoEvento = AcaoTipo.values.firstWhere(
+      (e) => e.name == 'EventoEspecial${nomeEvento.replaceAll(' ', '')}',
+      orElse: () => AcaoTipo.Campanha,
+    );
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -762,20 +805,22 @@ $reqText
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              applyChanges({
-                'xp': 15,
-                'felicidade': 10,
-                'dinheiro': -30,
-                'contaComoAcao':
-                    contaComoAcao, // <<< Aqui é o ponto importante!
-              }, 'Participou do evento $nomeEvento.');
+              applyChanges(
+                tipoEvento, // ou o tipo mais apropriado pro evento
+                {
+                  'xp': 15,
+                  'felicidade': 10,
+                  'dinheiro': -30,
+                  'contaComoAcao': contaComoAcao,
+                },
+              );
             },
             child: const Text('Participar'),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              story.add("$anoAtual: Recusou o evento $nomeEvento.");
+              adicionarAoFeed("$anoAtual: Recusou o evento $nomeEvento.");
             },
             child: const Text('Recusar'),
           ),
@@ -801,17 +846,17 @@ $reqText
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              applyChanges({
+              applyChanges(AcaoTipo.ParticiparReuniao, {
                 'xp': 10,
                 'felicidade': 5,
-              }, 'Participou de uma reunião surpresa do clube.');
+              });
             },
             child: const Text('Participar'),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              story.add(
+              adicionarAoFeed(
                 "${DateTime.now().year + idade.floor() - 18}: Você ignorou uma reunião do clube.",
               );
             },
@@ -952,12 +997,31 @@ $reqText
                           child: Container(
                             color: Colors.white.withOpacity(0.05),
                             padding: const EdgeInsets.all(12),
-                            child: Text(
-                              getProximoCargoPreview(),
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 14,
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  getProximoCargoPreview().split('\n').first,
+                                  style: const TextStyle(
+                                    color: Colors.amber,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                ...getProximoCargoPreview()
+                                    .split('\n')
+                                    .skip(1)
+                                    .map(
+                                      (line) => Text(
+                                        line,
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ),
+                              ],
                             ),
                           ),
                         ),
@@ -970,29 +1034,65 @@ $reqText
                         controller: _scrollController,
                         itemCount: story.length,
                         itemBuilder: (context, index) {
+                          final texto = story[index];
+                          final partes = texto.split(': ');
+                          final ano = partes.first;
+                          final descricao = partes.length > 1
+                              ? partes.sublist(1).join(': ')
+                              : '';
+
                           return Padding(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
+                              horizontal: 16,
                               vertical: 6,
                             ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(20),
-                              child: BackdropFilter(
-                                filter: ImageFilter.blur(
-                                  sigmaX: 10,
-                                  sigmaY: 10,
-                                ),
-                                child: Container(
-                                  color: Colors.white.withOpacity(0.05),
-                                  padding: const EdgeInsets.all(16),
-                                  child: Text(
-                                    story[index],
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.white,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.06),
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 4,
+                                    offset: const Offset(2, 2),
+                                  ),
+                                ],
+                              ),
+                              padding: const EdgeInsets.all(14),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(
+                                    Icons.event_note,
+                                    color: Colors.amber,
+                                    size: 28,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          ano,
+                                          style: const TextStyle(
+                                            color: Colors.amber,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          descricao,
+                                          style: const TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ),
+                                ],
                               ),
                             ),
                           );
@@ -1019,7 +1119,15 @@ $reqText
                                 navigateWithTransition(
                                   context,
                                   ActionsScreen(
-                                    onActionSelected: applyChanges,
+                                    onActionSelected: (effects, label) {
+                                      final tipo = AcaoTipo.values.firstWhere(
+                                        (e) =>
+                                            e.name == label.replaceAll(' ', ''),
+                                        orElse: () =>
+                                            AcaoTipo.Trabalhar, // fallback
+                                      );
+                                      applyChanges(tipo, effects);
+                                    },
                                     onShowInfo: (info) =>
                                         showDialogMessage('Info: ', info),
                                   ),

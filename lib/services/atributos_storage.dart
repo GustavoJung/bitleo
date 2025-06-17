@@ -81,6 +81,36 @@ class AtributosStorage {
     return prefs.getString(_nomeKey);
   }
 
+  static Future<void> salvarHistorico(List<String> story) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('story', story);
+  }
+
+  static Future<List<String>> carregarHistorico() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList('story') ?? [];
+  }
+
+  static Future<void> salvarCargo(String cargo) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('cargo', cargo);
+  }
+
+  static Future<String> carregarCargo() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('cargo') ?? 'Pré-LEO';
+  }
+
+  static Future<void> salvarConquistas(List<String> conquistas) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('conquistas', conquistas);
+  }
+
+  static Future<List<String>> carregarConquistas() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList('conquistas') ?? [];
+  }
+
   static Future<void> verificarInicializacao() async {
     final prefs = await SharedPreferences.getInstance();
     final primeiraVez = prefs.getBool('primeiraVez') ?? true;
