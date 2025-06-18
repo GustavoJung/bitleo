@@ -480,11 +480,11 @@ $reqText
               width: 300,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.grey[900]?.withOpacity(0.8),
+                color: const Color(0xFF2E003E).withOpacity(0.9),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Color(0xFFBA68C8).withOpacity(0.3),
+                    color: const Color(0xFFD1B3FF).withOpacity(0.3),
                     blurRadius: 20,
                     spreadRadius: 5,
                   ),
@@ -498,7 +498,7 @@ $reqText
                     Text(
                       title,
                       style: const TextStyle(
-                        color: Colors.amber,
+                        color: Color(0xFFD1B3FF),
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                       ),
@@ -507,12 +507,21 @@ $reqText
                     Text(
                       message,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white),
+                      style: const TextStyle(color: Colors.white70),
                     ),
                     const SizedBox(height: 20),
                     ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6A1B9A),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Ok'),
+                      child: const Text(
+                        'Ok',
+                        style: TextStyle(color: Colors.white),
+                      ),
                     ),
                   ],
                 ),
@@ -687,12 +696,24 @@ $reqText
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
+        backgroundColor: const Color(0xFF2E003E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: Color(0xFFD1B3FF),
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        content: Text(message, style: const TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK', style: TextStyle(color: Color(0xFFD1B3FF))),
+            child: const Text(
+              'OK',
+              style: TextStyle(color: Colors.deepPurpleAccent),
+            ),
           ),
         ],
       ),
@@ -816,10 +837,15 @@ $reqText
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Color(0xFF2E003E),
+        backgroundColor: const Color(0xFF3A0A5D),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Text(
           '📅 Evento Especial: $nomeEvento',
-          style: const TextStyle(color: Color(0xFFD1B3FF)),
+          style: const TextStyle(
+            color: Color(0xFFE1BEE7),
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         content: Text(
           '$descricao\n\nVocê foi convidado para o evento $nomeEvento! Deseja participar? Custa 30 de dinheiro.',
@@ -829,19 +855,16 @@ $reqText
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              applyChanges(
-                tipoEvento, // ou o tipo mais apropriado pro evento
-                {
-                  'xp': 15,
-                  'felicidade': 10,
-                  'dinheiro': -30,
-                  'contaComoAcao': contaComoAcao,
-                },
-              );
+              applyChanges(tipoEvento, {
+                'xp': 15,
+                'felicidade': 10,
+                'dinheiro': -30,
+                'contaComoAcao': contaComoAcao,
+              });
             },
             child: const Text(
               'Participar',
-              style: TextStyle(color: Color(0xFFD1B3FF)),
+              style: TextStyle(color: Colors.greenAccent),
             ),
           ),
           TextButton(
@@ -851,7 +874,7 @@ $reqText
             },
             child: const Text(
               'Recusar',
-              style: TextStyle(color: Color(0xFFD1B3FF)),
+              style: TextStyle(color: Colors.redAccent),
             ),
           ),
         ],
