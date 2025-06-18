@@ -4,12 +4,13 @@ import 'package:flutter/material.dart';
 /// AppBar simples (sem ações)
 PreferredSizeWidget buildCustomAppBar(String title) {
   return AppBar(
-    backgroundColor: Colors.white.withOpacity(0.05),
+    backgroundColor: Color(0xFF6A1B9A).withOpacity(0.3),
     elevation: 0,
     centerTitle: true,
     title: Text(
       title,
       style: const TextStyle(
+        fontFamily: 'Poppins',
         color: Colors.white,
         fontSize: 22,
         fontWeight: FontWeight.bold,
@@ -20,21 +21,12 @@ PreferredSizeWidget buildCustomAppBar(String title) {
         bottomLeft: Radius.circular(0),
         bottomRight: Radius.circular(0),
       ),
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(color: Colors.transparent),
-        ),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(color: Colors.black.withOpacity(0.3)),
       ),
     ),
-    iconTheme: const IconThemeData(color: Colors.amber),
+    iconTheme: const IconThemeData(color: Color(0xFFFF7043)),
   );
 }
 
@@ -44,12 +36,13 @@ PreferredSizeWidget buildCustomAppBarWithActions({
   required List<Widget> actions,
 }) {
   return AppBar(
-    backgroundColor: Colors.white.withOpacity(0.05),
+    backgroundColor: Color(0xFF6A1B9A).withOpacity(0.3),
     elevation: 0,
     centerTitle: true,
     title: Text(
       title,
       style: const TextStyle(
+        fontFamily: 'Poppins',
         color: Colors.white,
         fontSize: 22,
         fontWeight: FontWeight.bold,
@@ -60,21 +53,12 @@ PreferredSizeWidget buildCustomAppBarWithActions({
         bottomLeft: Radius.circular(0),
         bottomRight: Radius.circular(0),
       ),
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(color: Colors.transparent),
-        ),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(color: Colors.black.withOpacity(0.3)),
       ),
     ),
-    iconTheme: const IconThemeData(color: Colors.amber),
+    iconTheme: const IconThemeData(color: Color.fromARGB(255, 128, 2, 206)),
     actions: actions,
   );
 }

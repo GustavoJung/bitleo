@@ -202,12 +202,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     )..repeat(reverse: true);
 
     colorAnimation1 = ColorTween(
-      begin: const Color(0xFF0F2027),
-      end: const Color(0xFF203A43),
+      begin: const Color(0xFF6A1B9A), // vinho escuro
+      end: const Color(0xFF512DA8), // roxo intermediário
     ).animate(_colorController);
+
     colorAnimation2 = ColorTween(
-      begin: const Color(0xFF203A43),
-      end: const Color(0xFF2C5364),
+      begin: const Color(0xFF512DA8),
+      end: const Color(0xFF121212), // preto quase puro
     ).animate(_colorController);
 
     _confettiController = ConfettiController(
@@ -322,44 +323,61 @@ $reqText
         return StatefulBuilder(
           builder: (context, setModalState) {
             return AlertDialog(
-              backgroundColor: Colors.grey[900],
-              title: const Text(
-                '🎯 Personalize seu personagem',
-                style: TextStyle(color: Colors.amber),
+              backgroundColor: const Color(0xFF2E003E),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: const Center(
+                child: Text(
+                  '🎯 Personalize seu Personagem',
+                  style: TextStyle(
+                    color: Color(0xFFD1B3FF),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     'Pontos restantes: $pontosDeAtributo',
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(color: Colors.white70, fontSize: 16),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   ...atributos.keys.map((key) {
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '$key: ${atributos[key]}',
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.add,
-                            color: Colors.greenAccent,
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '$key: ${atributos[key]}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
                           ),
-                          onPressed: pontosDeAtributo > 0
-                              ? () {
-                                  setModalState(() {
-                                    atributos[key] = (atributos[key] ?? 0) + 1;
-                                  });
-                                  setState(() {
-                                    pontosDeAtributo--;
-                                  });
-                                }
-                              : null,
-                        ),
-                      ],
+                          IconButton(
+                            icon: const Icon(
+                              Icons.add_circle_outline,
+                              color: Colors.deepPurpleAccent,
+                            ),
+                            onPressed: pontosDeAtributo > 0
+                                ? () {
+                                    setModalState(() {
+                                      atributos[key] =
+                                          (atributos[key] ?? 0) + 1;
+                                    });
+                                    setState(() {
+                                      pontosDeAtributo--;
+                                    });
+                                  }
+                                : null,
+                          ),
+                        ],
+                      ),
                     );
                   }).toList(),
                 ],
@@ -371,10 +389,13 @@ $reqText
                       final continuar = await showDialog<bool>(
                         context: context,
                         builder: (ctx) => AlertDialog(
-                          backgroundColor: Colors.grey[850],
+                          backgroundColor: const Color(0xFF3E1F47),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                           title: const Text(
-                            'Pontos restantes',
-                            style: TextStyle(color: Colors.amber),
+                            'Pontos Restantes',
+                            style: TextStyle(color: Color(0xFFD1B3FF)),
                           ),
                           content: Text(
                             'Você ainda tem $pontosDeAtributo ponto(s) não distribuído(s).\nDeseja continuar mesmo assim?',
@@ -385,14 +406,14 @@ $reqText
                               onPressed: () => Navigator.of(ctx).pop(false),
                               child: const Text(
                                 'Cancelar',
-                                style: TextStyle(color: Colors.red),
+                                style: TextStyle(color: Colors.redAccent),
                               ),
                             ),
                             TextButton(
                               onPressed: () => Navigator.of(ctx).pop(true),
                               child: const Text(
                                 'Confirmar',
-                                style: TextStyle(color: Colors.green),
+                                style: TextStyle(color: Colors.greenAccent),
                               ),
                             ),
                           ],
@@ -412,7 +433,10 @@ $reqText
                   },
                   child: const Text(
                     'Confirmar',
-                    style: TextStyle(color: Colors.amber),
+                    style: TextStyle(
+                      color: Color(0xFFD1B3FF),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -460,7 +484,7 @@ $reqText
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.white.withOpacity(0.3),
+                    color: Color(0xFFBA68C8).withOpacity(0.3),
                     blurRadius: 20,
                     spreadRadius: 5,
                   ),
@@ -668,7 +692,7 @@ $reqText
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            child: const Text('OK', style: TextStyle(color: Color(0xFFD1B3FF))),
           ),
         ],
       ),
@@ -717,10 +741,10 @@ $reqText
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
+        backgroundColor: Color(0xFF2E003E),
         title: Text(
           'Nova oportunidade: $novoCargo',
-          style: const TextStyle(color: Colors.amber),
+          style: const TextStyle(color: Color(0xFFD1B3FF)),
         ),
         content: Text(
           'Você atingiu os requisitos para o cargo de $novoCargo!\n\n'
@@ -792,10 +816,10 @@ $reqText
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
+        backgroundColor: Color(0xFF2E003E),
         title: Text(
           '📅 Evento Especial: $nomeEvento',
-          style: const TextStyle(color: Colors.amber),
+          style: const TextStyle(color: Color(0xFFD1B3FF)),
         ),
         content: Text(
           '$descricao\n\nVocê foi convidado para o evento $nomeEvento! Deseja participar? Custa 30 de dinheiro.',
@@ -815,14 +839,20 @@ $reqText
                 },
               );
             },
-            child: const Text('Participar'),
+            child: const Text(
+              'Participar',
+              style: TextStyle(color: Color(0xFFD1B3FF)),
+            ),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               adicionarAoFeed("$anoAtual: Recusou o evento $nomeEvento.");
             },
-            child: const Text('Recusar'),
+            child: const Text(
+              'Recusar',
+              style: TextStyle(color: Color(0xFFD1B3FF)),
+            ),
           ),
         ],
       ),
@@ -833,10 +863,10 @@ $reqText
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
+        backgroundColor: Color(0xFF2E003E),
         title: const Text(
           '🤔 Evento Aleatório',
-          style: TextStyle(color: Colors.amber),
+          style: TextStyle(color: Color(0xFFD1B3FF)),
         ),
         content: const Text(
           'Você foi convidado para uma reunião surpresa do clube. Deseja participar?',
@@ -876,7 +906,11 @@ $reqText
           scale: animation.value,
           child: Column(
             children: [
-              Icon(icon, color: Colors.amber, size: 28),
+              Icon(
+                icon,
+                color: const Color.fromARGB(255, 230, 192, 255),
+                size: 28,
+              ),
               const SizedBox(height: 4),
               Text(
                 value,
@@ -936,7 +970,7 @@ $reqText
                   atributos = novosAtributos;
                   pontosDeAtributo = novosPontos;
                 });
-                updateCargo(); // verificar promoção após voltar
+                updateCargo();
               });
             },
           ),
@@ -948,7 +982,6 @@ $reqText
           ),
         ],
       ),
-
       body: AnimatedBuilder(
         animation: _colorController,
         builder: (context, child) {
@@ -958,8 +991,8 @@ $reqText
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      colorAnimation1.value ?? Colors.black,
-                      colorAnimation2.value ?? Colors.black,
+                      colorAnimation1.value ?? const Color(0xFF6A1B9A),
+                      colorAnimation2.value ?? const Color(0xFF121212),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -967,7 +1000,6 @@ $reqText
                 ),
                 child: Column(
                   children: [
-                    // Header com Status
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -985,50 +1017,6 @@ $reqText
                         ),
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                          child: Container(
-                            color: Colors.white.withOpacity(0.05),
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  getProximoCargoPreview().split('\n').first,
-                                  style: const TextStyle(
-                                    color: Colors.amber,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                ...getProximoCargoPreview()
-                                    .split('\n')
-                                    .skip(1)
-                                    .map(
-                                      (line) => Text(
-                                        line,
-                                        style: const TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // Feed
                     Expanded(
                       child: ListView.builder(
                         controller: _scrollController,
@@ -1040,7 +1028,6 @@ $reqText
                           final descricao = partes.length > 1
                               ? partes.sublist(1).join(': ')
                               : '';
-
                           return Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 16,
@@ -1052,8 +1039,9 @@ $reqText
                                 borderRadius: BorderRadius.circular(16),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    blurRadius: 4,
+                                    color: Color(0xFFBA68C8).withOpacity(0.3),
+                                    blurRadius: 20,
+                                    spreadRadius: 5,
                                     offset: const Offset(2, 2),
                                   ),
                                 ],
@@ -1064,7 +1052,7 @@ $reqText
                                 children: [
                                   const Icon(
                                     Icons.event_note,
-                                    color: Colors.amber,
+                                    color: Color.fromARGB(255, 255, 255, 255),
                                     size: 28,
                                   ),
                                   const SizedBox(width: 12),
@@ -1076,7 +1064,13 @@ $reqText
                                         Text(
                                           ano,
                                           style: const TextStyle(
-                                            color: Colors.amber,
+                                            fontFamily: 'Poppins',
+                                            color: Color.fromARGB(
+                                              255,
+                                              255,
+                                              255,
+                                              255,
+                                            ),
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -1085,6 +1079,7 @@ $reqText
                                         Text(
                                           descricao,
                                           style: const TextStyle(
+                                            fontFamily: 'Poppins',
                                             color: Colors.white70,
                                             fontSize: 14,
                                           ),
@@ -1099,7 +1094,6 @@ $reqText
                         },
                       ),
                     ),
-                    // Botões
                     Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Row(
@@ -1107,7 +1101,12 @@ $reqText
                           Expanded(
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.amber,
+                                backgroundColor: const Color.fromARGB(
+                                  255,
+                                  32,
+                                  4,
+                                  49,
+                                ).withValues(alpha: 0.3),
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 16,
                                 ),
@@ -1123,8 +1122,7 @@ $reqText
                                       final tipo = AcaoTipo.values.firstWhere(
                                         (e) =>
                                             e.name == label.replaceAll(' ', ''),
-                                        orElse: () =>
-                                            AcaoTipo.Trabalhar, // fallback
+                                        orElse: () => AcaoTipo.Trabalhar,
                                       );
                                       applyChanges(tipo, effects);
                                     },
@@ -1136,7 +1134,8 @@ $reqText
                               child: const Text(
                                 'Escolher Ação',
                                 style: TextStyle(
-                                  color: Colors.black,
+                                  fontFamily: 'Poppins',
+                                  color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -1155,7 +1154,11 @@ $reqText
                     confettiController: _confettiController,
                     blastDirectionality: BlastDirectionality.explosive,
                     shouldLoop: false,
-                    colors: [Colors.amber, Colors.white, Colors.orange],
+                    colors: [
+                      Color(0xFFFFD54F),
+                      Colors.white,
+                      Color(0xFFFF7043),
+                    ],
                     emissionFrequency: 0.05,
                     numberOfParticles: 20,
                     gravity: 0.2,
