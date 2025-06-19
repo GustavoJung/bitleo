@@ -100,83 +100,149 @@ class _ConquistasScreenState extends State<ConquistasScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final conquistasDesbloqueadas = conquistas
-        .where((c) => c.desbloqueada)
-        .toList();
+    final total = conquistas.length;
+    final desbloqueadas = conquistas.where((c) => c.desbloqueada).length;
 
     return Scaffold(
       appBar: buildCustomAppBar('Minhas Conquistas'),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
+            colors: [Color(0xFF6A1B9A), Color(0xFF512DA8), Color(0xFF121212)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
         ),
-        child: conquistasDesbloqueadas.isEmpty
-            ? const Center(
-                child: Text(
-                  'Nenhuma conquista ainda.\nBora fazer história no LEO Clube!',
-                  style: TextStyle(color: Colors.white70, fontSize: 18),
-                  textAlign: TextAlign.center,
-                ),
-              )
-            : GridView.builder(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Text(
+                '$desbloqueadas de $total conquistas desbloqueadas',
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
+              ),
+            ),
+            Expanded(
+              child: GridView.builder(
                 padding: const EdgeInsets.all(16),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
                 ),
-                itemCount: conquistasDesbloqueadas.length,
+                itemCount: conquistas.length,
                 itemBuilder: (context, index) {
-                  final conquista = conquistasDesbloqueadas[index];
-                  return Card(
-                    color: Colors.white.withOpacity(0.08),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.emoji_events,
-                          color: Colors.amber,
-                          size: 50,
-                        ),
-                        const SizedBox(height: 10),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Text(
+                  final conquista = conquistas[index];
+                  return GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          backgroundColor: const Color(0xFF2E003E),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          title: Text(
                             conquista.titulo,
                             style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
+                              color: Color(0xFFD1B3FF),
                               fontWeight: FontWeight.bold,
                             ),
-                            textAlign: TextAlign.center,
                           ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8.0,
-                            vertical: 4,
-                          ),
-                          child: Text(
+                          content: Text(
                             conquista.descricao,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
+                            style: const TextStyle(color: Colors.white70),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text(
+                                'Fechar',
+                                style: TextStyle(
+                                  color: Colors.deepPurpleAccent,
+                                ),
+                              ),
                             ),
-                            textAlign: TextAlign.center,
+                          ],
+                        ),
+                      );
+                    },
+                    child: Opacity(
+                      opacity: conquista.desbloqueada ? 1.0 : 0.3,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF3A0A5D).withOpacity(0.4),
+                            border: Border.all(
+                              color: const Color(0xFFD1B3FF).withOpacity(0.2),
+                            ),
+                          ),
+                          child: Stack(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: SizedBox.expand(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment
+                                        .center, // <- esse é o pulo do gato
+                                    children: [
+                                      const Icon(
+                                        Icons.emoji_events,
+                                        color: Color.fromARGB(
+                                          255,
+                                          230,
+                                          203,
+                                          85,
+                                        ),
+                                        size: 40,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        conquista.titulo,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        conquista.descricao,
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 12,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              if (!conquista.desbloqueada)
+                                const Positioned(
+                                  top: 6,
+                                  right: 6,
+                                  child: Icon(
+                                    Icons.lock,
+                                    color: Colors.white38,
+                                    size: 20,
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
                   );
                 },
               ),
+            ),
+          ],
+        ),
       ),
     );
   }

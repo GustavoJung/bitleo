@@ -72,10 +72,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
+        backgroundColor: const Color(0xFF2E003E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
           'Atualizar Clube',
-          style: TextStyle(color: Colors.amber),
+          style: TextStyle(color: Color(0xFFD1B3FF)),
         ),
         content: TextField(
           controller: _controller,
@@ -84,7 +85,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             hintText: 'Digite o nome do clube',
             hintStyle: TextStyle(color: Colors.white54),
             enabledBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: Colors.amber),
+              borderSide: BorderSide(color: Color(0xFFD1B3FF)),
             ),
             focusedBorder: UnderlineInputBorder(
               borderSide: BorderSide(color: Colors.white),
@@ -112,7 +113,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               }
               Navigator.pop(context);
             },
-            child: const Text('Aplicar', style: TextStyle(color: Colors.amber)),
+            child: const Text(
+              'Aplicar',
+              style: TextStyle(color: Color(0xFFD1B3FF)),
+            ),
           ),
         ],
       ),
@@ -126,7 +130,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
+            colors: [Color(0xFF6A1B9A), Color(0xFF512DA8), Color(0xFF121212)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -139,14 +143,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   const Icon(
                     Icons.emoji_events,
-                    color: Colors.amber,
+                    color: Color(0xFFD1B3FF),
                     size: 100,
                   ),
                   const SizedBox(height: 10),
                   Text(
                     cargo,
                     style: const TextStyle(
-                      color: Colors.amber,
+                      color: Color(0xFFD1B3FF),
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
@@ -160,7 +164,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onPressed: () => _showEditDialog(context),
                     child: const Text(
                       'Atualizar Clube',
-                      style: TextStyle(color: Colors.amber),
+                      style: TextStyle(color: Color(0xFFD1B3FF)),
                     ),
                   ),
                 ],
@@ -193,7 +197,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const Text(
               'Atributos',
               style: TextStyle(
-                color: Colors.amber,
+                color: Color(0xFFD1B3FF),
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
               ),
@@ -213,26 +217,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget infoCardWrap(IconData icon, String label, String value) {
-    return SizedBox(
-      width: (MediaQuery.of(context).size.width / 2) - 36,
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxWidth: (MediaQuery.of(context).size.width / 2) - 32,
+      ),
       child: infoCard(icon, label, value),
     );
   }
 
   Widget infoCard(IconData icon, String label, String value) {
     return Card(
-      color: Colors.white.withOpacity(0.05),
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      color: const Color(0xFF3A0A5D).withOpacity(0.4),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.amber, size: 32),
-        title: Text(
-          label,
-          style: const TextStyle(color: Colors.white, fontSize: 18),
-        ),
-        subtitle: Text(
-          value,
-          style: const TextStyle(fontSize: 16, color: Colors.white70),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: const Color(0xFFD1B3FF), size: 30),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    value,
+                    style: const TextStyle(fontSize: 14, color: Colors.white70),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -244,7 +274,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     bool atingiuLimite = nivel >= 50;
 
     return Card(
-      color: Colors.white.withOpacity(0.05),
+      color: const Color(0xFF3A0A5D).withOpacity(0.4),
       margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
@@ -255,7 +285,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Text(
               nome,
               style: const TextStyle(
-                color: Colors.amber,
+                color: Color(0xFFD1B3FF),
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -265,7 +295,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               value: progresso.clamp(0.0, 1.0),
               minHeight: 10,
               backgroundColor: Colors.white24,
-              color: atingiuLimite ? Colors.green : Colors.amber,
+              color: atingiuLimite ? Colors.green : const Color(0xFFD1B3FF),
             ),
             const SizedBox(height: 6),
             Row(
@@ -277,7 +307,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: atingiuLimite ? Colors.grey : Colors.amber,
+                    backgroundColor: atingiuLimite
+                        ? Colors.grey
+                        : const Color(0xFFD1B3FF),
                     foregroundColor: Colors.black,
                   ),
                   onPressed: (!atingiuLimite && pontosRestantes > 0)

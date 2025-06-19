@@ -578,6 +578,12 @@ $reqText
     setState(() {
       story.add(texto);
     });
+    await Future.delayed(const Duration(milliseconds: 100));
+    _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
     await AtributosStorage.salvarHistorico(story);
   }
 
@@ -966,36 +972,67 @@ $reqText
       appBar: buildCustomAppBarWithActions(
         title: 'C. LEO - ${widget.nome}',
         actions: [
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () {
-              Navigator.push(
-                context,
-                PageRouteBuilder(
-                  transitionDuration: const Duration(milliseconds: 500),
-                  pageBuilder: (_, __, ___) => const ProfileScreen(),
-                  transitionsBuilder: (_, animation, __, child) {
-                    const curve = Curves.easeInOut;
-                    final tween = Tween(
-                      begin: 0.0,
-                      end: 1.0,
-                    ).chain(CurveTween(curve: curve));
-                    return FadeTransition(
-                      opacity: animation.drive(tween),
-                      child: child,
-                    );
+          Tooltip(
+            message: pontosDeAtributo > 0
+                ? 'Você tem pontos de atributos para distribuir!'
+                : 'Ver perfil',
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.person),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        transitionDuration: const Duration(milliseconds: 500),
+                        pageBuilder: (_, __, ___) => const ProfileScreen(),
+                        transitionsBuilder: (_, animation, __, child) {
+                          const curve = Curves.easeInOut;
+                          final tween = Tween(
+                            begin: 0.0,
+                            end: 1.0,
+                          ).chain(CurveTween(curve: curve));
+                          return FadeTransition(
+                            opacity: animation.drive(tween),
+                            child: child,
+                          );
+                        },
+                      ),
+                    ).then((_) async {
+                      final novosAtributos = await AtributosStorage.carregar();
+                      final novosPontos =
+                          await AtributosStorage.carregarPontos();
+                      setState(() {
+                        atributos = novosAtributos;
+                        pontosDeAtributo = novosPontos;
+                      });
+                      updateCargo();
+                    });
                   },
                 ),
-              ).then((_) async {
-                final novosAtributos = await AtributosStorage.carregar();
-                final novosPontos = await AtributosStorage.carregarPontos();
-                setState(() {
-                  atributos = novosAtributos;
-                  pontosDeAtributo = novosPontos;
-                });
-                updateCargo();
-              });
-            },
+                if (pontosDeAtributo > 0)
+                  Positioned(
+                    right: 6,
+                    top: 6,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.redAccent,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '$pontosDeAtributo',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.emoji_events),
@@ -1058,16 +1095,13 @@ $reqText
                             ),
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.06),
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Color(0xFFBA68C8).withOpacity(0.3),
-                                    blurRadius: 20,
-                                    spreadRadius: 5,
-                                    offset: const Offset(2, 2),
+                                color: const Color(0xFF3A0A5D).withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.deepPurple.shade900.withOpacity(
+                                    0.5,
                                   ),
-                                ],
+                                ),
                               ),
                               padding: const EdgeInsets.all(14),
                               child: Row(
@@ -1075,8 +1109,8 @@ $reqText
                                 children: [
                                   const Icon(
                                     Icons.event_note,
-                                    color: Color.fromARGB(255, 255, 255, 255),
-                                    size: 28,
+                                    color: Color(0xFFD1B3FF),
+                                    size: 24,
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
@@ -1090,12 +1124,12 @@ $reqText
                                             fontFamily: 'Poppins',
                                             color: Color.fromARGB(
                                               255,
-                                              255,
-                                              255,
+                                              236,
+                                              224,
                                               255,
                                             ),
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
@@ -1103,7 +1137,12 @@ $reqText
                                           descricao,
                                           style: const TextStyle(
                                             fontFamily: 'Poppins',
-                                            color: Colors.white70,
+                                            color: Color.fromARGB(
+                                              255,
+                                              236,
+                                              224,
+                                              255,
+                                            ),
                                             fontSize: 14,
                                           ),
                                         ),
@@ -1118,53 +1157,50 @@ $reqText
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color.fromARGB(
-                                  255,
-                                  32,
-                                  4,
-                                  49,
-                                ).withValues(alpha: 0.3),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 16,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                              ),
-                              onPressed: () {
-                                navigateWithTransition(
-                                  context,
-                                  ActionsScreen(
-                                    onActionSelected: (effects, label) {
-                                      final tipo = AcaoTipo.values.firstWhere(
-                                        (e) =>
-                                            e.name == label.replaceAll(' ', ''),
-                                        orElse: () => AcaoTipo.Trabalhar,
-                                      );
-                                      applyChanges(tipo, effects);
-                                    },
-                                    onShowInfo: (info) =>
-                                        showDialogMessage('Info: ', info),
-                                  ),
-                                );
-                              },
-                              child: const Text(
-                                'Escolher Ação',
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0,
+                        vertical: 10,
+                      ),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color.fromARGB(
+                              255,
+                              44,
+                              3,
+                              70,
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
                             ),
                           ),
-                        ],
+                          onPressed: () {
+                            navigateWithTransition(
+                              context,
+                              ActionsScreen(
+                                onActionSelected: (effects, label) {
+                                  final tipo = AcaoTipo.values.firstWhere(
+                                    (e) => e.name == label.replaceAll(' ', ''),
+                                    orElse: () => AcaoTipo.Trabalhar,
+                                  );
+                                  applyChanges(tipo, effects);
+                                },
+                                onShowInfo: (info) =>
+                                    showDialogMessage('Info: ', info),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            'Escolher Ação',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ],
