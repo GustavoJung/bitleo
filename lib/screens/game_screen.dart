@@ -151,6 +151,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     () async {
       await AtributosStorage.verificarInicializacao();
 
+      final prefs = await AtributosStorage.getPrefs();
+      final viuTutorial = prefs.getBool('tutorial_visto') ?? false;
+      if (!viuTutorial) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          showTutorial();
+        });
+      }
+
       final results = await Future.wait([
         AtributosStorage.carregarStatus(),
         AtributosStorage.carregar(),
@@ -186,12 +194,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         story = historico;
         dadosCarregados = true;
       });
-
-      if (p == 3 && !distribuiu) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          showDistribuicaoInicial();
-        });
-      }
 
       updateCargo();
     }();
@@ -923,6 +925,95 @@ $reqText
           ),
         ],
       ),
+    );
+  }
+
+  void showTutorial() {
+    final List<Map<String, String>> paginas = [
+      {
+        'titulo': 'Bem-vindo!',
+        'texto': 'Aqui você acompanha sua jornada dentro do LEO Clube.',
+      },
+      {
+        'titulo': 'Escolher Ação',
+        'texto':
+            'Toque em "Escolher Ação" para avançar, evoluir e viver novas experiências!',
+      },
+      {
+        'titulo': 'Status',
+        'texto': 'Seus atributos aumentam conforme suas ações. Fique de olho!',
+      },
+      {
+        'titulo': 'Distribua Pontos',
+        'texto':
+            'Toque no botão de perfil quando tiver pontos disponíveis para evoluir atributos.',
+      },
+      {
+        'titulo': 'Conquistas',
+        'texto': 'Desbloqueie marcos e veja tudo o que já conquistou!',
+      },
+    ];
+
+    int currentIndex = 0;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final page = paginas[currentIndex];
+            return AlertDialog(
+              backgroundColor: const Color(0xFF2E003E),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Text(
+                page['titulo']!,
+                style: const TextStyle(
+                  color: Color(0xFFD1B3FF),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+              content: Text(
+                page['texto']!,
+                style: const TextStyle(color: Colors.white70),
+              ),
+              actions: [
+                if (currentIndex < paginas.length - 1)
+                  TextButton(
+                    onPressed: () {
+                      setModalState(() {
+                        currentIndex++;
+                      });
+                    },
+                    child: const Text(
+                      'Próximo',
+                      style: TextStyle(color: Color(0xFFD1B3FF)),
+                    ),
+                  )
+                else
+                  TextButton(
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      final prefs = await AtributosStorage.getPrefs();
+                      await prefs.setBool('tutorial_visto', true);
+
+                      // Espera um frame pra garantir que o dialog anterior fechou
+                      await Future.delayed(const Duration(milliseconds: 100));
+                      showDistribuicaoInicial();
+                    },
+                    child: const Text(
+                      'Fechar',
+                      style: TextStyle(color: Color(0xFFD1B3FF)),
+                    ),
+                  ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

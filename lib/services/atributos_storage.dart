@@ -111,6 +111,10 @@ class AtributosStorage {
     return prefs.getStringList('conquistas') ?? [];
   }
 
+  static Future<SharedPreferences> getPrefs() async {
+    return await SharedPreferences.getInstance();
+  }
+
   static Future<void> verificarInicializacao() async {
     final prefs = await SharedPreferences.getInstance();
     final primeiraVez = prefs.getBool('primeiraVez') ?? true;
