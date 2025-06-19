@@ -46,7 +46,7 @@ class ActionsScreen extends StatelessWidget {
                       Text(
                         title,
                         style: const TextStyle(
-                          color: Colors.amber,
+                          color: Color(0xFFD1B3FF),
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),
@@ -63,7 +63,7 @@ class ActionsScreen extends StatelessWidget {
                       const SizedBox(height: 20),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.amber,
+                          backgroundColor: const Color(0xFFD1B3FF),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
@@ -96,8 +96,40 @@ class ActionsScreen extends StatelessWidget {
     );
   }
 
+  bool canPerformAction(Map<String, dynamic> action, Map<String, int> status) {
+    if ((action['label'] == 'Trabalhar' || action['label'] == 'Campanha') &&
+        status['saude']! < 30)
+      return false;
+    if ((action['label'] == 'Campanha' || action['label'] == 'Estudar') &&
+        status['felicidade']! < 20)
+      return false;
+    if (action['label'] == 'Estudar' && status['inteligencia']! < 15)
+      return false;
+    return true;
+  }
+
+  String requirementText(Map<String, dynamic> action) {
+    List<String> reqs = [];
+    if (action['label'] == 'Trabalhar' || action['label'] == 'Campanha') {
+      reqs.add('Saúde ≥ 30');
+    }
+    if (action['label'] == 'Campanha' || action['label'] == 'Estudar') {
+      reqs.add('Felicidade ≥ 20');
+    }
+    if (action['label'] == 'Estudar') {
+      reqs.add('Inteligência ≥ 15');
+    }
+    return reqs.join(', ');
+  }
+
   @override
   Widget build(BuildContext context) {
+    final status =
+        ModalRoute.of(context)?.settings.arguments as Map<String, int>? ?? {};
+    final saude = status['saude'] ?? 0;
+    final felicidade = status['felicidade'] ?? 0;
+    final inteligencia = status['inteligencia'] ?? 0;
+
     final List<Map<String, dynamic>> actions = [
       {
         'label': 'Trabalhar',
@@ -171,20 +203,22 @@ class ActionsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: buildCustomAppBar('Escolher Ação'),
-      extendBodyBehindAppBar: true,
+      extendBodyBehindAppBar: false,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
+            colors: [Color(0xFF6A1B9A), Color(0xFF512DA8), Color(0xFF121212)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
         ),
         child: ListView.builder(
-          padding: const EdgeInsets.only(top: 100, bottom: 20),
+          padding: const EdgeInsets.symmetric(vertical: 16),
           itemCount: actions.length,
           itemBuilder: (context, index) {
             final action = actions[index];
+            final pode = true; //canPerformAction(action, status);
+            final reqText = requirementText(action);
 
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -192,49 +226,74 @@ class ActionsScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withOpacity(0.1)),
-                    ),
-                    child: ListTile(
-                      leading: Icon(
-                        action['icon'],
-                        color: Colors.amber,
-                        size: 32,
-                      ),
-                      title: Text(
-                        action['label'],
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                  child: Opacity(
+                    opacity: pode ? 1.0 : 0.4,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.1),
                         ),
                       ),
-                      subtitle: Text(
-                        action['description'],
-                        style: const TextStyle(color: Colors.white70),
-                      ),
-                      trailing: IconButton(
-                        icon: const Icon(
-                          Icons.info_outline,
-                          color: Colors.white70,
+                      child: ListTile(
+                        leading: Icon(
+                          action['icon'],
+                          color: pode
+                              ? const Color(0xFFD1B3FF)
+                              : Colors.white38,
+                          size: 32,
                         ),
-                        onPressed: () {
-                          showInfoDialog(
-                            context,
-                            action['label'],
-                            action['info'] ?? '',
-                          );
-                        },
-                      ),
-                      onTap: () {
-                        Navigator.pop(context);
-                        onActionSelected(
-                          action['effects'] as Map<String, dynamic>,
+                        title: Text(
                           action['label'],
-                        );
-                      },
+                          style: TextStyle(
+                            color: pode ? Colors.white : Colors.white38,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        subtitle: Text(
+                          action['description'],
+                          style: TextStyle(
+                            color: pode ? Colors.white70 : Colors.white38,
+                          ),
+                        ),
+                        trailing: Tooltip(
+                          message: pode ? 'Saiba mais' : reqText,
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.info_outline,
+                              color: pode ? Colors.white70 : Colors.white38,
+                            ),
+                            onPressed: () => showInfoDialog(
+                              context,
+                              action['label'],
+                              action['info'] ?? '',
+                            ),
+                          ),
+                        ),
+                        onTap: pode
+                            ? () {
+                                Navigator.pop(context);
+                                onActionSelected(
+                                  action['effects'] as Map<String, dynamic>,
+                                  action['label'],
+                                );
+                              }
+                            : () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Não pode: $reqText',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    backgroundColor: Colors.deepPurple,
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              },
+                      ),
                     ),
                   ),
                 ),

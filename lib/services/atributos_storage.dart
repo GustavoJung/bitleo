@@ -44,14 +44,12 @@ class AtributosStorage {
 
   static Future<void> salvar(Map<String, int> atributos) async {
     final prefs = await SharedPreferences.getInstance();
-    debugPrint("💾 Salvando atributos: $atributos");
     prefs.setString(_key, jsonEncode(atributos));
   }
 
   static Future<Map<String, int>> carregar() async {
     final prefs = await SharedPreferences.getInstance();
     final jsonString = prefs.getString(_key);
-    debugPrint("📦 Carregando atributos: $jsonString");
     if (jsonString == null) {
       return {'Oratória': 0, 'Liderança': 0, 'Empatia': 0, 'Organização': 0};
     }
@@ -60,14 +58,12 @@ class AtributosStorage {
 
   static Future<void> salvarPontos(int pontos) async {
     final prefs = await SharedPreferences.getInstance();
-    debugPrint("💾 Salvando pontos: $pontos");
     prefs.setInt(_pontosKey, pontos);
   }
 
   static Future<int> carregarPontos() async {
     final prefs = await SharedPreferences.getInstance();
     final valor = prefs.getInt(_pontosKey) ?? 0;
-    debugPrint("📦 Carregando pontos: $valor");
     return valor;
   }
 

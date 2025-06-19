@@ -593,6 +593,79 @@ $reqText
     if (!dadosCarregados || isProcessing) return;
     setState(() => isProcessing = true);
 
+    final identificador = '${tipo.name}_${selected['nome']}';
+    final prefs = await AtributosStorage.getPrefs();
+    String? ultimaAcao = prefs.getString('ultima_acao');
+
+    // Cooldown: evitar repetição
+    if (identificador == ultimaAcao) {
+      ScaffoldMessenger.of(context)
+        ..removeCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            backgroundColor: const Color.fromARGB(255, 44, 3, 70),
+            duration: const Duration(seconds: 2),
+            content: SizedBox(
+              width: double.infinity,
+              child: Text(
+                "Tente variar suas ações!",
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        );
+
+      setState(() => isProcessing = false);
+      return;
+    }
+
+    await prefs.setString('ultima_acao', identificador);
+
+    // Impeditivos
+    if ((identificador.contains('trabalhar') ||
+            identificador.contains('campanha')) &&
+        saude < 30) {
+      adicionarAoFeed(
+        "$anoAtual: Você está exausto demais para essa ação. Cuide da sua saúde!",
+      );
+      setState(() => isProcessing = false);
+      return;
+    }
+
+    if ((identificador.contains('campanha') ||
+            identificador.contains('palestrar')) &&
+        felicidade < 20) {
+      adicionarAoFeed(
+        "$anoAtual: Você está desmotivado demais para isso. Recupere sua felicidade!",
+      );
+      setState(() => isProcessing = false);
+      return;
+    }
+
+    if (identificador.contains('palestrar') && inteligencia < 15) {
+      adicionarAoFeed(
+        "$anoAtual: Você precisa ser mais inteligente pra palestrar com confiança!",
+      );
+      setState(() => isProcessing = false);
+      return;
+    }
+
+    // Salvar última ação
+    await prefs.setString('ultima_acao', identificador);
+
+    // Evento negativo aleatório (se saúde muito baixa)
+    if (saude < 15 && (DateTime.now().millisecondsSinceEpoch % 4 == 0)) {
+      adicionarAoFeed(
+        "$anoAtual: Você ficou doente por negligenciar sua saúde. 😷",
+      );
+      saude -= 10;
+      felicidade -= 5;
+    }
+
     int gasto = ((selected['dinheiro'] ?? 0) as num).toInt();
 
     if (dinheiro + gasto < 0) {
@@ -1005,7 +1078,7 @@ $reqText
                       showDistribuicaoInicial();
                     },
                     child: const Text(
-                      'Fechar',
+                      'Começar',
                       style: TextStyle(color: Color(0xFFD1B3FF)),
                     ),
                   ),
