@@ -1,11 +1,13 @@
 import 'package:bitleo/services/atributos_storage.dart';
+import 'package:bitleo/services/conquistas_service.dart';
 import 'package:flutter/material.dart';
 import '../widgets/custom_appbar.dart';
+import '../services/conquistas_service.dart';
 
 class Conquista {
   final String titulo;
   final String descricao;
-  final bool desbloqueada;
+  bool desbloqueada;
 
   Conquista({
     required this.titulo,
@@ -43,7 +45,10 @@ class _ConquistasScreenState extends State<ConquistasScreen> {
       titulo: 'Explorador',
       descricao: 'Visitou todas as telas principais.',
     ),
-    Conquista(titulo: 'Persistente', descricao: 'Realizou 10 ações no jogo.'),
+    Conquista(
+      titulo: 'Ativo no clube',
+      descricao: 'Realizou 10 ações no jogo.',
+    ),
     Conquista(
       titulo: 'Começando a Jornada',
       descricao: 'Ganhou seus primeiros 10 de XP.',
@@ -53,48 +58,23 @@ class _ConquistasScreenState extends State<ConquistasScreen> {
       descricao: 'Chegou a 50 de XP.',
     ),
     Conquista(titulo: 'Fala Bonita!', descricao: 'Atingiu 10 de Oratória.'),
-    Conquista(titulo: 'Líder Nato', descricao: 'Atingiu 10 de Liderança.'),
-    Conquista(titulo: 'Coração Aberto', descricao: 'Atingiu 10 de Empatia.'),
-    Conquista(
-      titulo: 'Organizado Demais',
-      descricao: 'Atingiu 10 de Organização.',
-    ),
-    Conquista(
-      titulo: 'Chegou ao Topo!',
-      descricao: 'Virou Presidente do clube.',
-    ),
-    Conquista(titulo: 'Sobreviveu à JALC', descricao: 'Participou da JALC.'),
-    Conquista(
-      titulo: 'Acampou com Estilo',
-      descricao: 'Participou do ACAMPALEO.',
-    ),
-    Conquista(
-      titulo: 'História em Construção',
-      descricao: 'Acumulou 10 entradas no histórico.',
-    ),
-    Conquista(
-      titulo: 'Se tornou Membro',
-      descricao: 'Foi empossado como membro.',
-    ),
   ];
 
   @override
   void initState() {
     super.initState();
-    carregarConquistas();
+    ConquistaService.marcarTelaVisitada('conquistas');
+    _carregarConquistas();
   }
 
-  Future<void> carregarConquistas() async {
-    final conquistasSalvas = await AtributosStorage.carregarConquistas();
+  Future<void> _carregarConquistas() async {
+    final estados = await ConquistaService.listarTodas(
+      conquistas.map((c) => c.titulo).toList(),
+    );
     setState(() {
-      conquistas = conquistas.map((c) {
-        final desbloqueada = conquistasSalvas.contains(c.titulo);
-        return Conquista(
-          titulo: c.titulo,
-          descricao: c.descricao,
-          desbloqueada: desbloqueada,
-        );
-      }).toList();
+      for (var c in conquistas) {
+        c.desbloqueada = estados[c.titulo] ?? false;
+      }
     });
   }
 

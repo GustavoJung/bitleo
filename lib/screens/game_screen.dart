@@ -9,6 +9,7 @@ import 'profile_screen.dart';
 import 'conquistas_screen.dart';
 import '../widgets/custom_appbar.dart';
 import '../services/atributos_storage.dart';
+import '../services/conquistas_service.dart';
 
 class GameScreen extends StatefulWidget {
   final String nome;
@@ -174,9 +175,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       final p = results[3] as int;
       final ultimoXP = results[4] as int;
       final historico = results[5] as List<String>;
-      final conquistasSalvas = await AtributosStorage.carregarConquistas();
+      final conquistasSalvas = await ConquistaService.carregarConquistas();
 
       String auxCargo = await AtributosStorage.carregarCargo();
+      await ConquistaService.marcarInicioDoJogo();
 
       setState(() {
         dinheiro = status['dinheiro'] ?? dinheiro;
@@ -267,7 +269,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       setState(() {
         conquistas.add(conquista);
       });
-      await AtributosStorage.salvarConquistas(conquistas);
+      await ConquistaService.salvarConquistas(conquistas);
       showAnimatedDialog('🏆 Nova Conquista!', conquista);
     }
   }
@@ -733,8 +735,11 @@ $reqText
         adicionarAoFeed("$anoAtual: Conquista desbloqueada: $conquista 🎉");
       },
     );
-
-    AtributosStorage.salvarConquistas(conquistas);
+    ConquistaService.checarDesbloqueios(
+      xp: xp,
+      acoes: totalAcoesDesdeInicioTrimestre,
+    );
+    ConquistaService.salvarConquistas(conquistas);
 
     setState(() {
       if (gasto != 0) triggerStatusAnim('dinheiro');
