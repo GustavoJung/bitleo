@@ -10,6 +10,10 @@ class ConquistaService {
     'name',
   ];
 
+  static Future<Set<String>> conquistasDesbloqueadas() async {
+    return _getDesbloqueadas();
+  }
+
   static Future<void> salvarConquistas(List<String> conquistas) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList('conquistas', conquistas);

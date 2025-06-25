@@ -264,14 +264,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     };
   }
 
-  void adicionarConquista(String conquista) async {
-    if (!conquistas.contains(conquista)) {
-      setState(() {
-        conquistas.add(conquista);
-      });
-      await ConquistaService.salvarConquistas(conquistas);
-      showAnimatedDialog('🏆 Nova Conquista!', conquista);
-    }
+  void adicionarConquista(String conquista) {
+    _confettiController.play();
+    showAnimatedDialog('🏆 Nova Conquista!', conquista);
   }
 
   void salvarDadosStatus() {
@@ -723,24 +718,25 @@ $reqText
       "$anoAtual: ${ActionMessageHelper.getRandomMessage(tipo)}",
     );
 
-    ActionMessageHelper.aplicarConquistas(
-      tipo: tipo,
-      xp: xp,
-      atributos: atributos,
-      cargo: cargo,
-      story: story,
-      conquistasAtuais: conquistas,
-      novaConquista: (conquista) {
-        adicionarConquista(conquista); // salva e mostra confete
-        adicionarAoFeed("$anoAtual: Conquista desbloqueada: $conquista 🎉");
-      },
-    );
-    ConquistaService.checarDesbloqueios(
+    final conquistasAntes = await ConquistaService.conquistasDesbloqueadas();
+
+    // checagem das conquistas
+    await ConquistaService.checarDesbloqueios(
       xp: xp,
       acoes: totalAcoesDesdeInicioTrimestre,
+      oratoria: atributos['Oratória'],
+      saude: saude,
+      felicidadeAlta: felicidade > 80 ? 5 : 0,
+      pontosDistribuidos: distribuiuPontosIniciais && pontosDeAtributo == 0,
+      turnosJogando: ((idade - 18) * 100).floor(),
     );
-    ConquistaService.salvarConquistas(conquistas);
 
+    final conquistasDepois = await ConquistaService.conquistasDesbloqueadas();
+
+    for (final nome in conquistasDepois.difference(conquistasAntes)) {
+      adicionarConquista(nome);
+      adicionarAoFeed("$anoAtual: Conquista desbloqueada: $nome 🎉");
+    }
     setState(() {
       if (gasto != 0) triggerStatusAnim('dinheiro');
       if (intel != 0) triggerStatusAnim('inteligencia');

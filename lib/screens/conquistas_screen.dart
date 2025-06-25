@@ -46,10 +46,6 @@ class _ConquistasScreenState extends State<ConquistasScreen> {
       descricao: 'Visitou todas as telas principais.',
     ),
     Conquista(
-      titulo: 'Ativo no clube',
-      descricao: 'Realizou 10 ações no jogo.',
-    ),
-    Conquista(
       titulo: 'Começando a Jornada',
       descricao: 'Ganhou seus primeiros 10 de XP.',
     ),
@@ -57,7 +53,18 @@ class _ConquistasScreenState extends State<ConquistasScreen> {
       titulo: 'Primeiro Passo de Liderança',
       descricao: 'Chegou a 50 de XP.',
     ),
+    Conquista(titulo: 'Persistente', descricao: 'Realizou 10 ações no jogo.'),
     Conquista(titulo: 'Fala Bonita!', descricao: 'Atingiu 10 de Oratória.'),
+    Conquista(titulo: 'Cura Total', descricao: 'Chegou a 100 de saúde.'),
+    Conquista(
+      titulo: 'Treta Controlada',
+      descricao: 'Manteve a felicidade alta por um bom tempo.',
+    ),
+    Conquista(
+      titulo: 'Estrategista',
+      descricao: 'Distribuiu seus pontos de atributo iniciais.',
+    ),
+    Conquista(titulo: 'Maratona LEO', descricao: 'Jogou por 30 turnos.'),
   ];
 
   @override
