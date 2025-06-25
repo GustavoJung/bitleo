@@ -9,6 +9,7 @@ import 'profile_screen.dart';
 import 'conquistas_screen.dart';
 import '../widgets/custom_appbar.dart';
 import '../services/atributos_storage.dart';
+import '../services/conquistas_service.dart';
 
 class GameScreen extends StatefulWidget {
   final String nome;
@@ -174,9 +175,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       final p = results[3] as int;
       final ultimoXP = results[4] as int;
       final historico = results[5] as List<String>;
-      final conquistasSalvas = await AtributosStorage.carregarConquistas();
+      final conquistasSalvas = await ConquistaService.carregarConquistas();
 
       String auxCargo = await AtributosStorage.carregarCargo();
+      await ConquistaService.marcarInicioDoJogo();
 
       setState(() {
         dinheiro = status['dinheiro'] ?? dinheiro;
@@ -262,14 +264,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     };
   }
 
-  void adicionarConquista(String conquista) async {
-    if (!conquistas.contains(conquista)) {
-      setState(() {
-        conquistas.add(conquista);
-      });
-      await AtributosStorage.salvarConquistas(conquistas);
-      showAnimatedDialog('🏆 Nova Conquista!', conquista);
-    }
+  void adicionarConquista(String conquista) {
+    _confettiController.play();
+    showAnimatedDialog('🏆 Nova Conquista!', conquista);
   }
 
   void salvarDadosStatus() {
@@ -721,21 +718,25 @@ $reqText
       "$anoAtual: ${ActionMessageHelper.getRandomMessage(tipo)}",
     );
 
-    ActionMessageHelper.aplicarConquistas(
-      tipo: tipo,
+    final conquistasAntes = await ConquistaService.conquistasDesbloqueadas();
+
+    // checagem das conquistas
+    await ConquistaService.checarDesbloqueios(
       xp: xp,
-      atributos: atributos,
-      cargo: cargo,
-      story: story,
-      conquistasAtuais: conquistas,
-      novaConquista: (conquista) {
-        adicionarConquista(conquista); // salva e mostra confete
-        adicionarAoFeed("$anoAtual: Conquista desbloqueada: $conquista 🎉");
-      },
+      acoes: totalAcoesDesdeInicioTrimestre,
+      oratoria: atributos['Oratória'],
+      saude: saude,
+      felicidadeAlta: felicidade > 80 ? 5 : 0,
+      pontosDistribuidos: distribuiuPontosIniciais && pontosDeAtributo == 0,
+      turnosJogando: ((idade - 18) * 100).floor(),
     );
 
-    AtributosStorage.salvarConquistas(conquistas);
+    final conquistasDepois = await ConquistaService.conquistasDesbloqueadas();
 
+    for (final nome in conquistasDepois.difference(conquistasAntes)) {
+      adicionarConquista(nome);
+      adicionarAoFeed("$anoAtual: Conquista desbloqueada: $nome 🎉");
+    }
     setState(() {
       if (gasto != 0) triggerStatusAnim('dinheiro');
       if (intel != 0) triggerStatusAnim('inteligencia');

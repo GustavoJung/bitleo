@@ -97,16 +97,6 @@ class AtributosStorage {
     return prefs.getString('cargo') ?? 'Pré-LEO';
   }
 
-  static Future<void> salvarConquistas(List<String> conquistas) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('conquistas', conquistas);
-  }
-
-  static Future<List<String>> carregarConquistas() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getStringList('conquistas') ?? [];
-  }
-
   static Future<SharedPreferences> getPrefs() async {
     return await SharedPreferences.getInstance();
   }

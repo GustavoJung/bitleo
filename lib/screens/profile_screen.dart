@@ -1,3 +1,4 @@
+import 'package:bitleo/services/conquistas_service.dart';
 import 'package:flutter/material.dart';
 import '../widgets/custom_appbar.dart';
 import '../services/atributos_storage.dart';
@@ -46,6 +47,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     carregarDados();
+    ConquistaService.marcarTelaVisitada('profile');
   }
 
   Future<void> carregarDados() async {

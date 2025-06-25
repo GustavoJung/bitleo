@@ -1,3 +1,4 @@
+import 'package:bitleo/services/conquistas_service.dart';
 import 'package:flutter/material.dart';
 import 'splash_screen.dart';
 import '../services/atributos_storage.dart';
@@ -15,6 +16,7 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    ConquistaService.marcarTelaVisitada('name');
     return Scaffold(
       body: AnimatedBackground(
         behaviour: RandomParticleBehaviour(
