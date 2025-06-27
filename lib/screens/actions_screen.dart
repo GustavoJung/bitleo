@@ -15,101 +15,42 @@ class ActionsScreen extends StatelessWidget {
 
   void showInfoDialog(BuildContext context, String title, String description) {
     ConquistaService.marcarTelaVisitada('actions');
-    showGeneralDialog(
+    showDialog(
       context: context,
-      barrierDismissible: true,
-      barrierLabel: '',
-      transitionDuration: const Duration(milliseconds: 400),
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return Center(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(
-                width: 300,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.grey[900]?.withOpacity(0.8),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.white.withOpacity(0.1),
-                      blurRadius: 20,
-                      spreadRadius: 5,
-                    ),
-                  ],
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          color: Color(0xFFD1B3FF),
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        description,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD1B3FF),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        child: const Text(
-                          'Fechar',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF3B1E5C),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
           ),
-        );
-      },
-      transitionBuilder: (context, animation, secondaryAnimation, child) {
-        return FadeTransition(
-          opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-          child: child,
-        );
-      },
+        ),
+        content: Text(
+          description,
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Fechar', style: TextStyle(color: Colors.amber)),
+          ),
+        ],
+      ),
     );
   }
 
   bool canPerformAction(Map<String, dynamic> action, Map<String, int> status) {
     if ((action['label'] == 'Trabalhar' || action['label'] == 'Campanha') &&
-        status['saude']! < 30) {
+        status['saude']! < 30)
       return false;
-    }
     if ((action['label'] == 'Campanha' || action['label'] == 'Estudar') &&
-        status['felicidade']! < 20) {
+        status['felicidade']! < 20)
       return false;
-    }
-    if (action['label'] == 'Estudar' && status['inteligencia']! < 15) {
+    if (action['label'] == 'Estudar' && status['inteligencia']! < 15)
       return false;
-    }
     return true;
   }
 
@@ -131,11 +72,7 @@ class ActionsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final status =
         ModalRoute.of(context)?.settings.arguments as Map<String, int>? ?? {};
-    final saude = status['saude'] ?? 0;
-    final felicidade = status['felicidade'] ?? 0;
-    final inteligencia = status['inteligencia'] ?? 0;
-
-    final List<Map<String, dynamic>> actions = [
+    final actions = [
       {
         'label': 'Trabalhar',
         'description': 'Ganhe dinheiro, mas fique um pouco mais estressado.',
@@ -208,103 +145,101 @@ class ActionsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: buildCustomAppBar('Escolher Ação'),
-      extendBodyBehindAppBar: false,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF6A1B9A), Color(0xFF512DA8), Color(0xFF121212)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: ListView.builder(
+      backgroundColor: const Color(0xFF3B1E5C),
+      body: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 900),
           padding: const EdgeInsets.symmetric(vertical: 16),
-          itemCount: actions.length,
-          itemBuilder: (context, index) {
-            final action = actions[index];
-            final pode = true; //canPerformAction(action, status);
-            final reqText = requirementText(action);
+          child: ListView.builder(
+            itemCount: actions.length,
+            itemBuilder: (context, index) {
+              final action = actions[index];
+              final pode = true; //canPerformAction(action, status);
+              final reqText = requirementText(action);
 
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Opacity(
-                    opacity: pode ? 1.0 : 0.4,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.1),
-                        ),
-                      ),
-                      child: ListTile(
-                        leading: Icon(
-                          action['icon'],
-                          color: pode
-                              ? const Color(0xFFD1B3FF)
-                              : Colors.white38,
-                          size: 32,
-                        ),
-                        title: Text(
-                          action['label'],
-                          style: TextStyle(
-                            color: pode ? Colors.white : Colors.white38,
-                            fontWeight: FontWeight.bold,
+              final String label = action['label'] as String;
+              final String description = action['description'] as String;
+              final String info = action['info'] as String;
+              final IconData icon = action['icon'] as IconData;
+              final Map<String, dynamic> effects =
+                  action['effects'] as Map<String, dynamic>;
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Opacity(
+                      opacity: pode ? 1.0 : 0.4,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6A1B9A).withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.1),
                           ),
                         ),
-                        subtitle: Text(
-                          action['description'],
-                          style: TextStyle(
-                            color: pode ? Colors.white70 : Colors.white38,
+                        child: ListTile(
+                          leading: Icon(
+                            icon,
+                            color: pode ? Colors.amber : Colors.white38,
+                            size: 32,
                           ),
-                        ),
-                        trailing: Tooltip(
-                          message: pode ? 'Saiba mais' : reqText,
-                          child: IconButton(
-                            icon: Icon(
-                              Icons.info_outline,
+                          title: Text(
+                            label,
+                            style: TextStyle(
+                              color: pode ? Colors.white : Colors.white38,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          subtitle: Text(
+                            description,
+                            style: TextStyle(
                               color: pode ? Colors.white70 : Colors.white38,
                             ),
-                            onPressed: () => showInfoDialog(
-                              context,
-                              action['label'],
-                              action['info'] ?? '',
+                          ),
+                          trailing: Tooltip(
+                            message: pode ? 'Saiba mais' : reqText,
+                            child: IconButton(
+                              icon: Icon(
+                                Icons.info_outline,
+                                color: pode ? Colors.white70 : Colors.white38,
+                              ),
+                              onPressed: () =>
+                                  showInfoDialog(context, label, info),
                             ),
                           ),
-                        ),
-                        onTap: pode
-                            ? () {
-                                Navigator.pop(context);
-                                onActionSelected(
-                                  action['effects'] as Map<String, dynamic>,
-                                  action['label'],
-                                );
-                              }
-                            : () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Não pode: $reqText',
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                          onTap: pode
+                              ? () {
+                                  Navigator.pop(context);
+                                  onActionSelected(effects, label);
+                                }
+                              : () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Não pode: $reqText',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                        ),
                                       ),
+                                      backgroundColor: Colors.deepPurple,
+                                      duration: const Duration(seconds: 2),
                                     ),
-                                    backgroundColor: Colors.deepPurple,
-                                    duration: const Duration(seconds: 2),
-                                  ),
-                                );
-                              },
+                                  );
+                                },
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
