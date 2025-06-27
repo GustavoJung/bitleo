@@ -1203,7 +1203,17 @@ $reqText
           IconButton(
             icon: const Icon(Icons.emoji_events),
             onPressed: () {
-              navigateWithTransition(context, ConquistasScreen());
+              navigateWithTransition(
+                context,
+                ConquistasScreen(
+                  onPontoResgatado: () async {
+                    final novosPontos = await AtributosStorage.carregarPontos();
+                    setState(() {
+                      pontosDeAtributo = novosPontos;
+                    });
+                  },
+                ),
+              );
             },
           ),
         ],

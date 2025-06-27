@@ -28,7 +28,9 @@ class Conquista {
 }
 
 class ConquistasScreen extends StatefulWidget {
-  const ConquistasScreen({super.key});
+  final VoidCallback onPontoResgatado;
+
+  const ConquistasScreen({super.key, required this.onPontoResgatado});
 
   @override
   State<ConquistasScreen> createState() => _ConquistasScreenState();
@@ -96,6 +98,7 @@ class _ConquistasScreenState extends State<ConquistasScreen> {
     int pontosAtuais = await AtributosStorage.carregarPontos();
     await AtributosStorage.salvarPontos(pontosAtuais + 1);
     await ConquistaService.registrarResgate(titulo);
+    widget.onPontoResgatado();
   }
 
   void _mostrarDetalhes(Conquista conquista) async {
