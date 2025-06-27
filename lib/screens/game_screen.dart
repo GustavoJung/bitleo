@@ -378,7 +378,7 @@ $reqText
                         ],
                       ),
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
               actions: [
@@ -557,8 +557,9 @@ $reqText
     final trimestreAtual = ((idade * 100).floor() % 100) ~/ 20 + 1;
 
     if (eventoDoTrimestreJaMostrado[trimestreAtual] == true ||
-        totalAcoesDesdeInicioTrimestre < minimoAcoesEntreEventos)
+        totalAcoesDesdeInicioTrimestre < minimoAcoesEntreEventos) {
       return;
+    }
 
     for (var evento in trimestreEvento.keys) {
       if (trimestreEvento[evento] == trimestreAtual &&

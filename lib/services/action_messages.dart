@@ -106,13 +106,16 @@ class ActionMessageHelper {
     if ((atributos['Oratória'] ?? 0) >= 10) conquistas.add('Fala Bonita!');
     if ((atributos['Liderança'] ?? 0) >= 10) conquistas.add('Líder Nato');
     if ((atributos['Empatia'] ?? 0) >= 10) conquistas.add('Coração Aberto');
-    if ((atributos['Organização'] ?? 0) >= 10)
+    if ((atributos['Organização'] ?? 0) >= 10) {
       conquistas.add('Organizado Demais');
+    }
     if (cargo == 'Presidente') conquistas.add('Chegou ao Topo!');
-    if (tipo == AcaoTipo.EventoEspecialJALC)
+    if (tipo == AcaoTipo.EventoEspecialJALC) {
       conquistas.add('Sobreviveu à JALC');
-    if (tipo == AcaoTipo.EventoEspecialACAMPALEO)
+    }
+    if (tipo == AcaoTipo.EventoEspecialACAMPALEO) {
       conquistas.add('Acampou com Estilo');
+    }
     if (story.length >= 10) conquistas.add('História em Construção');
     return conquistas;
   }

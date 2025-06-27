@@ -1,5 +1,7 @@
+import 'package:bitleo/services/clube_storage.dart';
 import 'package:bitleo/services/conquistas_service.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/custom_appbar.dart';
 import '../services/atributos_storage.dart';
 
@@ -42,12 +44,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int xp = 0;
   double idade = 18;
   String cargo = 'Pré-LEO';
+  String clubeAtual = 'Clube não informado';
 
   @override
   void initState() {
     super.initState();
+    carregarClube();
     carregarDados();
     ConquistaService.marcarTelaVisitada('profile');
+  }
+
+  Future<void> carregarClube() async {
+    final clube = await ClubeStorage.carregar();
+    setState(() {
+      clubeAtual = clube;
+      if (clubesInfo.containsKey(clube)) {
+        regiao = clubesInfo[clube]!['regiao']!;
+        distrito = clubesInfo[clube]!['distrito']!;
+        regiaoDesc = clubesInfo[clube]!['regiaoDesc']!;
+        distritoDesc = clubesInfo[clube]!['distritoDesc']!;
+      }
+    });
   }
 
   Future<void> carregarDados() async {
@@ -69,30 +86,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showEditDialog(BuildContext context) {
-    final TextEditingController _controller = TextEditingController();
+    String? clubeSelecionado;
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF2E003E),
+        backgroundColor: const Color(0xFF4A148C),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
           'Atualizar Clube',
-          style: TextStyle(color: Color(0xFFD1B3FF)),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        content: TextField(
-          controller: _controller,
-          style: const TextStyle(color: Colors.white),
+        content: DropdownButtonFormField<String>(
+          value: clubeSelecionado,
+          dropdownColor: const Color(0xFF4A148C),
           decoration: const InputDecoration(
-            hintText: 'Digite o nome do clube',
+            filled: true,
+            fillColor: Color(0xFF4A148C),
+            hintText: 'Selecione seu clube',
             hintStyle: TextStyle(color: Colors.white54),
-            enabledBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: Color(0xFFD1B3FF)),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.white54),
             ),
-            focusedBorder: UnderlineInputBorder(
+            focusedBorder: OutlineInputBorder(
               borderSide: BorderSide(color: Colors.white),
             ),
           ),
+          iconEnabledColor: Colors.white,
+          style: const TextStyle(color: Colors.white),
+          items: clubesInfo.keys.map((String clube) {
+            return DropdownMenuItem<String>(
+              value: clube,
+              child: Text(clube, style: const TextStyle(color: Colors.white)),
+            );
+          }).toList(),
+          onChanged: (String? newValue) {
+            clubeSelecionado = newValue;
+            ClubeStorage.salvar(clubeSelecionado!);
+          },
         ),
         actions: [
           TextButton(
@@ -102,23 +137,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: TextStyle(color: Colors.white70),
             ),
           ),
-          TextButton(
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber,
+              foregroundColor: Colors.black,
+            ),
             onPressed: () {
-              final clube = _controller.text.trim();
-              if (clubesInfo.containsKey(clube)) {
+              if (clubeSelecionado != null &&
+                  clubesInfo.containsKey(clubeSelecionado)) {
                 setState(() {
-                  regiao = clubesInfo[clube]!['regiao']!;
-                  distrito = clubesInfo[clube]!['distrito']!;
-                  regiaoDesc = clubesInfo[clube]!['regiaoDesc']!;
-                  distritoDesc = clubesInfo[clube]!['distritoDesc']!;
+                  regiao = clubesInfo[clubeSelecionado]!['regiao']!;
+                  distrito = clubesInfo[clubeSelecionado]!['distrito']!;
+                  regiaoDesc = clubesInfo[clubeSelecionado]!['regiaoDesc']!;
+                  distritoDesc = clubesInfo[clubeSelecionado]!['distritoDesc']!;
                 });
               }
               Navigator.pop(context);
             },
-            child: const Text(
-              'Aplicar',
-              style: TextStyle(color: Color(0xFFD1B3FF)),
-            ),
+            child: const Text('Aplicar'),
           ),
         ],
       ),
@@ -129,138 +165,173 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: buildCustomAppBar('Perfil'),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF6A1B9A), Color(0xFF512DA8), Color(0xFF121212)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            Center(
-              child: Column(
-                children: [
-                  const Icon(
-                    Icons.emoji_events,
-                    color: Color(0xFFD1B3FF),
-                    size: 100,
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    cargo,
-                    style: const TextStyle(
-                      color: Color(0xFFD1B3FF),
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${idade.toInt()} anos',
-                    style: const TextStyle(color: Colors.white70),
-                  ),
-                  TextButton(
-                    onPressed: () => _showEditDialog(context),
-                    child: const Text(
-                      'Atualizar Clube',
-                      style: TextStyle(color: Color(0xFFD1B3FF)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 30),
-            infoCard(Icons.map, 'Região', regiaoDesc),
-            infoCard(Icons.location_city, 'Distrito $distrito', distritoDesc),
-            const SizedBox(height: 30),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
+      backgroundColor: const Color(0xFF3B1E5C),
+      body: SingleChildScrollView(
+        child: Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 900),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                infoCardWrap(Icons.attach_money, 'Dinheiro', 'R\$ $dinheiro'),
-                infoCardWrap(
-                  Icons.school,
-                  'Inteligência',
-                  inteligencia.toString(),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.emoji_events,
+                      color: Colors.amber,
+                      size: 80,
+                    ),
+                    const SizedBox(width: 24),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          cargo,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '${idade.toInt()} anos',
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                        Text(
+                          clubeAtual,
+                          style: const TextStyle(color: Colors.white54),
+                        ),
+                        TextButton(
+                          onPressed: () => _showEditDialog(context),
+                          child: const Text(
+                            'Atualizar Clube',
+                            style: TextStyle(color: Colors.amber),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                infoCardWrap(
-                  Icons.emoji_emotions,
-                  'Felicidade',
-                  felicidade.toString(),
+                const SizedBox(height: 32),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Flexible(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 140),
+                        child: infoCard(Icons.map, 'Região', regiaoDesc),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Flexible(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 140),
+                        child: infoCard(
+                          Icons.location_city,
+                          'Distrito $distrito',
+                          distritoDesc,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                infoCardWrap(Icons.favorite, 'Saúde', saude.toString()),
-                infoCardWrap(Icons.star, 'Experiência', '$xp XP'),
+                const SizedBox(height: 32),
+                const Text(
+                  'Recursos',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    return Wrap(
+                      spacing: 16,
+                      runSpacing: 16,
+                      children: [
+                        SizedBox(
+                          width: constraints.maxWidth / 3 - 16,
+                          child: infoCard(
+                            Icons.attach_money,
+                            'Dinheiro',
+                            'R\$ $dinheiro',
+                          ),
+                        ),
+                        SizedBox(
+                          width: constraints.maxWidth / 3 - 16,
+                          child: infoCard(
+                            Icons.school,
+                            'Inteligência',
+                            inteligencia.toString(),
+                          ),
+                        ),
+                        SizedBox(
+                          width: constraints.maxWidth / 3 - 16,
+                          child: infoCard(
+                            Icons.emoji_emotions,
+                            'Felicidade',
+                            felicidade.toString(),
+                          ),
+                        ),
+                        SizedBox(
+                          width: constraints.maxWidth / 3 - 16,
+                          child: infoCard(
+                            Icons.favorite,
+                            'Saúde',
+                            saude.toString(),
+                          ),
+                        ),
+                        SizedBox(
+                          width: constraints.maxWidth / 3 - 16,
+                          child: infoCard(Icons.star, 'Experiência', '$xp XP'),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 32),
+                Text(
+                  'Pontos restantes: $pontosRestantes',
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                const SizedBox(height: 12),
+                atributoCard('Oratória'),
+                atributoCard('Liderança'),
+                atributoCard('Empatia'),
+                atributoCard('Organização'),
               ],
             ),
-            const SizedBox(height: 30),
-            const Text(
-              'Atributos',
-              style: TextStyle(
-                color: Color(0xFFD1B3FF),
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              'Pontos restantes: $pontosRestantes',
-              style: const TextStyle(color: Colors.white70),
-            ),
-            atributoCard('Oratória'),
-            atributoCard('Liderança'),
-            atributoCard('Empatia'),
-            atributoCard('Organização'),
-          ],
+          ),
         ),
       ),
-    );
-  }
-
-  Widget infoCardWrap(IconData icon, String label, String value) {
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        maxWidth: (MediaQuery.of(context).size.width / 2) - 32,
-      ),
-      child: infoCard(icon, label, value),
     );
   }
 
   Widget infoCard(IconData icon, String label, String value) {
     return Card(
-      color: const Color(0xFF3A0A5D).withOpacity(0.4),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: const Color(0xFF6A1B9A),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: const Color(0xFFD1B3FF), size: 30),
-            const SizedBox(width: 8),
+            Icon(icon, color: Colors.amber, size: 30),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      label,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      softWrap: false,
-                      overflow: TextOverflow.ellipsis,
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    value,
-                    style: const TextStyle(fontSize: 14, color: Colors.white70),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  Text(value, style: const TextStyle(color: Colors.white70)),
                 ],
               ),
             ),
@@ -276,30 +347,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
     bool atingiuLimite = nivel >= 50;
 
     return Card(
-      color: const Color(0xFF3A0A5D).withOpacity(0.4),
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: const Color(0xFF6A1B9A),
+      margin: const EdgeInsets.symmetric(vertical: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               nome,
               style: const TextStyle(
-                color: Color(0xFFD1B3FF),
-                fontSize: 18,
+                color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 10),
             LinearProgressIndicator(
               value: progresso.clamp(0.0, 1.0),
-              minHeight: 10,
+              minHeight: 12,
               backgroundColor: Colors.white24,
-              color: atingiuLimite ? Colors.green : const Color(0xFFD1B3FF),
+              color: atingiuLimite ? Colors.green : Colors.amber,
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -309,9 +379,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: atingiuLimite
-                        ? Colors.grey
-                        : const Color(0xFFD1B3FF),
+                    backgroundColor: atingiuLimite ? Colors.grey : Colors.amber,
                     foregroundColor: Colors.black,
                   ),
                   onPressed: (!atingiuLimite && pontosRestantes > 0)

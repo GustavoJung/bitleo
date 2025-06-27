@@ -100,13 +100,16 @@ class ActionsScreen extends StatelessWidget {
 
   bool canPerformAction(Map<String, dynamic> action, Map<String, int> status) {
     if ((action['label'] == 'Trabalhar' || action['label'] == 'Campanha') &&
-        status['saude']! < 30)
+        status['saude']! < 30) {
       return false;
+    }
     if ((action['label'] == 'Campanha' || action['label'] == 'Estudar') &&
-        status['felicidade']! < 20)
+        status['felicidade']! < 20) {
       return false;
-    if (action['label'] == 'Estudar' && status['inteligencia']! < 15)
+    }
+    if (action['label'] == 'Estudar' && status['inteligencia']! < 15) {
       return false;
+    }
     return true;
   }
 

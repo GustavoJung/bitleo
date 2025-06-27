@@ -10,6 +10,20 @@ class ConquistaService {
     'name',
   ];
 
+  static const String _resgatadasKey = 'conquistas_resgatadas';
+
+  static Future<Set<String>> conquistasResgatadas() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(_resgatadasKey)?.toSet() ?? {};
+  }
+
+  static Future<void> registrarResgate(String titulo) async {
+    final prefs = await SharedPreferences.getInstance();
+    final atuais = await conquistasResgatadas();
+    atuais.add(titulo);
+    await prefs.setStringList(_resgatadasKey, atuais.toList());
+  }
+
   static Future<Set<String>> conquistasDesbloqueadas() async {
     return _getDesbloqueadas();
   }
