@@ -200,6 +200,18 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       updateCargo();
     }();
 
+    AtributosStorage.salvarStatus({
+      'dinheiro': dinheiro,
+      'inteligencia': inteligencia,
+      'felicidade': felicidade,
+      'saude': saude,
+      'idade': idade,
+      'xp': xp,
+      'cargo': cargo,
+    });
+    AtributosStorage.salvar(atributos);
+    AtributosStorage.salvarPontos(pontosDeAtributo);
+
     _colorController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 8),

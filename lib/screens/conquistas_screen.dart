@@ -132,15 +132,26 @@ class _ConquistasScreenState extends State<ConquistasScreen> {
                 await _resgatarRecompensa(conquista.titulo);
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Recompensa resgatada com sucesso!'),
-                    backgroundColor: Colors.green,
+                  SnackBar(
+                    backgroundColor: Colors.deepPurple,
+                    behavior: SnackBarBehavior.floating,
+                    content: SizedBox(
+                      width: double.infinity,
+                      child: Text(
+                        'Recompensa resgatada com sucesso!',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
                   ),
                 );
               },
               child: const Text(
                 'Resgatar',
-                style: TextStyle(color: Colors.amber),
+                style: TextStyle(color: Colors.white),
               ),
             ),
           TextButton(
@@ -227,15 +238,21 @@ class ConquistaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool desbloqueada = conquista.desbloqueada;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       width: 220,
       height: 180,
       decoration: BoxDecoration(
-        color: conquista.desbloqueada
-            ? const Color(0xFF7B1FA2)
-            : const Color(0xFF6A1B9A),
-        borderRadius: BorderRadius.circular(12),
+        color: desbloqueada
+            ? const Color(0xFF4A148C) // Roxo forte
+            : const Color(0xFF2C2C2C), // Cinza escuro
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: desbloqueada ? Colors.amber.withOpacity(0.6) : Colors.white24,
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.3),
@@ -245,32 +262,44 @@ class ConquistaCard extends StatelessWidget {
         ],
       ),
       padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Icon(
-            Icons.emoji_events,
-            color: conquista.desbloqueada ? Colors.amber : Colors.grey[300],
-            size: 36,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                desbloqueada ? Icons.emoji_events : Icons.lock_outline,
+                color: desbloqueada ? Colors.amber : Colors.grey[400],
+                size: 36,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                conquista.titulo,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: desbloqueada ? Colors.white : Colors.grey[400],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: Text(
+                  conquista.descricao,
+                  style: TextStyle(
+                    color: desbloqueada ? Colors.white70 : Colors.grey[500],
+                    fontSize: 14,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            conquista.titulo,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+          if (!desbloqueada)
+            const Align(
+              alignment: Alignment.topRight,
+              child: Icon(Icons.lock, color: Colors.grey, size: 20),
             ),
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: Text(
-              conquista.descricao,
-              style: const TextStyle(color: Colors.white70, fontSize: 14),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
         ],
       ),
     );

@@ -4,9 +4,23 @@ import 'package:flutter/material.dart';
 /// AppBar simples (sem ações)
 PreferredSizeWidget buildCustomAppBar(String title) {
   return AppBar(
-    backgroundColor: Color(0xFF6A1B9A).withOpacity(0.3),
     elevation: 0,
     centerTitle: true,
+    backgroundColor: Colors.transparent,
+    flexibleSpace: ClipRRect(
+      borderRadius: const BorderRadius.only(
+        bottomLeft: Radius.circular(0),
+        bottomRight: Radius.circular(0),
+      ),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+        child: Container(
+          color: const Color(
+            0xFF6A1B9A,
+          ).withOpacity(0.6), // Roxo sólido translúcido
+        ),
+      ),
+    ),
     title: Text(
       title,
       style: const TextStyle(
@@ -16,29 +30,29 @@ PreferredSizeWidget buildCustomAppBar(String title) {
         fontWeight: FontWeight.bold,
       ),
     ),
-    flexibleSpace: ClipRRect(
-      borderRadius: const BorderRadius.only(
-        bottomLeft: Radius.circular(0),
-        bottomRight: Radius.circular(0),
-      ),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(color: Colors.black.withOpacity(0.3)),
-      ),
-    ),
-    iconTheme: const IconThemeData(color: Color(0xFFFF7043)),
+    iconTheme: const IconThemeData(color: Colors.white),
   );
 }
 
-/// AppBar com ações (ícones)
+/// AppBar com ações e tooltips
 PreferredSizeWidget buildCustomAppBarWithActions({
   required String title,
   required List<Widget> actions,
 }) {
   return AppBar(
-    backgroundColor: Color(0xFF6A1B9A).withOpacity(0.3),
     elevation: 0,
     centerTitle: true,
+    backgroundColor: Colors.transparent,
+    flexibleSpace: ClipRRect(
+      borderRadius: const BorderRadius.only(
+        bottomLeft: Radius.circular(0),
+        bottomRight: Radius.circular(0),
+      ),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+        child: Container(color: const Color(0xFF6A1B9A).withOpacity(0.6)),
+      ),
+    ),
     title: Text(
       title,
       style: const TextStyle(
@@ -48,17 +62,39 @@ PreferredSizeWidget buildCustomAppBarWithActions({
         fontWeight: FontWeight.bold,
       ),
     ),
-    flexibleSpace: ClipRRect(
-      borderRadius: const BorderRadius.only(
-        bottomLeft: Radius.circular(0),
-        bottomRight: Radius.circular(0),
-      ),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(color: Colors.black.withOpacity(0.3)),
-      ),
-    ),
-    iconTheme: const IconThemeData(color: Color.fromARGB(255, 128, 2, 206)),
-    actions: actions,
+    iconTheme: const IconThemeData(color: Colors.white),
+    actions: actions
+        .map(
+          (widget) => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Tooltip(
+              message: _getTooltipForAction(widget),
+              child: widget,
+            ),
+          ),
+        )
+        .toList(),
   );
+}
+
+/// Função auxiliar para definir textos de hover
+String _getTooltipForAction(Widget widget) {
+  if (widget is IconButton) {
+    final icon = widget.icon;
+    if (icon is Icon) {
+      switch (icon.icon) {
+        case Icons.person:
+          return 'Perfil';
+        case Icons.emoji_events:
+          return 'Conquistas';
+        case Icons.settings:
+          return 'Configurações';
+        case Icons.help:
+          return 'Ajuda';
+        default:
+          return 'Ação';
+      }
+    }
+  }
+  return 'Ação';
 }
