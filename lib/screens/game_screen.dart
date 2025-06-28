@@ -321,124 +321,247 @@ $reqText
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            return AlertDialog(
-              backgroundColor: const Color(0xFF2E003E),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 24,
               ),
-              title: const Center(
-                child: Text(
-                  '🎯 Personalize seu Personagem',
-                  style: TextStyle(
-                    color: Color(0xFFD1B3FF),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Pontos restantes: $pontosDeAtributo',
-                    style: const TextStyle(color: Colors.white70, fontSize: 16),
-                  ),
-                  const SizedBox(height: 12),
-                  ...atributos.keys.map((key) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 400),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(28),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(28),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.1),
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
+                          const Icon(
+                            Icons.tune,
+                            size: 48,
+                            color: Color(0xFFE1BEE7),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Distribua Seus Pontos',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Color(0xFFD1B3FF),
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
                           Text(
-                            '$key: ${atributos[key]}',
+                            'Pontos restantes: $pontosDeAtributo',
+                            textAlign: TextAlign.center,
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: Colors.white70,
                               fontSize: 16,
                             ),
                           ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.add_circle_outline,
-                              color: Colors.deepPurpleAccent,
+                          const SizedBox(height: 16),
+                          ...atributos.keys.map((key) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '$key: ${atributos[key]}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.add_circle_outline,
+                                      color: Colors.deepPurpleAccent,
+                                    ),
+                                    onPressed: pontosDeAtributo > 0
+                                        ? () {
+                                            setModalState(() {
+                                              atributos[key] =
+                                                  (atributos[key] ?? 0) + 1;
+                                            });
+                                            setState(() {
+                                              pontosDeAtributo--;
+                                            });
+                                          }
+                                        : null,
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF6A1B9A),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                              ),
+                              onPressed: () async {
+                                if (pontosDeAtributo > 0) {
+                                  final continuar = await showDialog<bool>(
+                                    context: context,
+                                    builder: (ctx) => Dialog(
+                                      backgroundColor: Colors.transparent,
+                                      insetPadding: const EdgeInsets.all(24),
+                                      child: ConstrainedBox(
+                                        constraints: const BoxConstraints(
+                                          maxWidth: 400,
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            28,
+                                          ),
+                                          child: BackdropFilter(
+                                            filter: ImageFilter.blur(
+                                              sigmaX: 20,
+                                              sigmaY: 20,
+                                            ),
+                                            child: Container(
+                                              padding: const EdgeInsets.all(24),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black.withOpacity(
+                                                  0.5,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(28),
+                                                border: Border.all(
+                                                  color: Colors.white
+                                                      .withOpacity(0.1),
+                                                ),
+                                              ),
+                                              child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  const Icon(
+                                                    Icons.warning,
+                                                    size: 48,
+                                                    color: Colors.amber,
+                                                  ),
+                                                  const SizedBox(height: 12),
+                                                  const Text(
+                                                    'Pontos Restantes',
+                                                    textAlign: TextAlign.center,
+                                                    style: TextStyle(
+                                                      color: Color(0xFFD1B3FF),
+                                                      fontSize: 20,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 12),
+                                                  Text(
+                                                    'Você ainda tem $pontosDeAtributo ponto(s) não distribuído(s).\nDeseja continuar mesmo assim?',
+                                                    textAlign: TextAlign.center,
+                                                    style: const TextStyle(
+                                                      color: Colors.white70,
+                                                      fontSize: 16,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 20),
+                                                  Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .spaceEvenly,
+                                                    children: [
+                                                      TextButton(
+                                                        onPressed: () =>
+                                                            Navigator.of(
+                                                              ctx,
+                                                            ).pop(false),
+                                                        child: const Text(
+                                                          'Cancelar',
+                                                          style: TextStyle(
+                                                            color: Colors
+                                                                .redAccent,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      ElevatedButton(
+                                                        style: ElevatedButton.styleFrom(
+                                                          backgroundColor:
+                                                              const Color(
+                                                                0xFF6A1B9A,
+                                                              ),
+                                                          shape: RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  30,
+                                                                ),
+                                                          ),
+                                                        ),
+                                                        onPressed: () =>
+                                                            Navigator.of(
+                                                              ctx,
+                                                            ).pop(true),
+                                                        child: const Text(
+                                                          'Confirmar',
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                  if (continuar != true) return;
+                                }
+                                if (!dadosCarregados) return;
+                                Navigator.of(context).pop();
+                                await AtributosStorage.salvar(atributos);
+                                await AtributosStorage.salvarPontos(
+                                  pontosDeAtributo,
+                                );
+                                await AtributosStorage.salvarDistribuicaoInicial(
+                                  true,
+                                );
+                                setState(() {
+                                  distribuiuPontosIniciais = true;
+                                });
+                              },
+                              child: const Text(
+                                'Confirmar',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                            onPressed: pontosDeAtributo > 0
-                                ? () {
-                                    setModalState(() {
-                                      atributos[key] =
-                                          (atributos[key] ?? 0) + 1;
-                                    });
-                                    setState(() {
-                                      pontosDeAtributo--;
-                                    });
-                                  }
-                                : null,
                           ),
                         ],
                       ),
-                    );
-                  }),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () async {
-                    if (pontosDeAtributo > 0) {
-                      final continuar = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          backgroundColor: const Color(0xFF3E1F47),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          title: const Text(
-                            'Pontos Restantes',
-                            style: TextStyle(color: Color(0xFFD1B3FF)),
-                          ),
-                          content: Text(
-                            'Você ainda tem $pontosDeAtributo ponto(s) não distribuído(s).\nDeseja continuar mesmo assim?',
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(ctx).pop(false),
-                              child: const Text(
-                                'Cancelar',
-                                style: TextStyle(color: Colors.redAccent),
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.of(ctx).pop(true),
-                              child: const Text(
-                                'Confirmar',
-                                style: TextStyle(color: Colors.greenAccent),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-
-                      if (continuar != true) return;
-                    }
-                    if (!dadosCarregados) return;
-                    Navigator.of(context).pop();
-                    await AtributosStorage.salvar(atributos);
-                    await AtributosStorage.salvarPontos(pontosDeAtributo);
-                    await AtributosStorage.salvarDistribuicaoInicial(true);
-                    setState(() {
-                      distribuiuPontosIniciais = true;
-                    });
-                  },
-                  child: const Text(
-                    'Confirmar',
-                    style: TextStyle(
-                      color: Color(0xFFD1B3FF),
-                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-              ],
+              ),
             );
           },
         );
@@ -466,73 +589,83 @@ $reqText
 
   void showAnimatedDialog(String title, String message) {
     _confettiController.play();
-    showGeneralDialog(
+    showDialog(
       context: context,
-      barrierDismissible: true,
-      barrierLabel: '',
-      transitionDuration: const Duration(milliseconds: 500),
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return Center(
-          child: ScaleTransition(
-            scale: CurvedAnimation(parent: animation, curve: Curves.elasticOut),
-            child: Container(
-              width: 300,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2E003E).withOpacity(0.9),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFD1B3FF).withOpacity(0.3),
-                    blurRadius: 20,
-                    spreadRadius: 5,
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(color: Colors.white.withOpacity(0.1)),
                   ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Color(0xFFD1B3FF),
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.emoji_events,
+                        size: 48,
+                        color: Colors.amber,
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      message,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white70),
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6A1B9A),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                      const SizedBox(height: 12),
+                      Text(
+                        title,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xFFD1B3FF),
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text(
-                        'Ok',
-                        style: TextStyle(color: Colors.white),
+                      const SizedBox(height: 12),
+                      Text(
+                        message,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 16,
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF6A1B9A),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text(
+                            'Fechar',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        );
-      },
-      transitionBuilder: (context, animation, secondaryAnimation, child) {
-        return FadeTransition(
-          opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-          child: child,
         );
       },
     );
@@ -775,31 +908,245 @@ $reqText
     }
   }
 
+  Future<void> showCustomDialog({
+    required IconData icon,
+    required String title,
+    required String description,
+    String? secondaryText,
+    String primaryButtonText = 'Entendi',
+    VoidCallback? onPrimaryPressed,
+    String? secondaryButtonText,
+    VoidCallback? onSecondaryPressed,
+  }) {
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(28),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, size: 48, color: const Color(0xFFE1BEE7)),
+                    const SizedBox(height: 12),
+                    Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xFFD1B3FF),
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      description,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 16,
+                      ),
+                    ),
+                    if (secondaryText != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        secondaryText,
+                        textAlign: TextAlign.left,
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        if (secondaryButtonText != null)
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              if (onSecondaryPressed != null) {
+                                onSecondaryPressed();
+                              }
+                            },
+                            child: Text(
+                              secondaryButtonText,
+                              style: const TextStyle(color: Colors.redAccent),
+                            ),
+                          ),
+                        Expanded(
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF6A1B9A),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            onPressed: () {
+                              Navigator.pop(context);
+                              if (onPrimaryPressed != null) {
+                                onPrimaryPressed();
+                              }
+                            },
+                            child: Text(
+                              primaryButtonText,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void showDialogMessage(String title, String message) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF2E003E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          title,
-          style: const TextStyle(
-            color: Color(0xFFD1B3FF),
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
           ),
-        ),
-        content: Text(message, style: const TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'OK',
-              style: TextStyle(color: Colors.deepPurpleAccent),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.info_outline,
+                        size: 48,
+                        color: Color(0xFFE1BEE7),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        title,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xFFD1B3FF),
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        message,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF6A1B9A),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text(
+                            'Entendi',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
-        ],
-      ),
+        );
+      },
+    );
+  }
+
+  void _oferecerPromocao(
+    String novoCargo,
+    int xpNecessario,
+    Map<String, int> requisitos,
+  ) {
+    final anoAtual = DateTime.now().year + idade.floor() - 18;
+    final requisitosTexto = requisitos.entries
+        .map((e) => "- ${e.key}: ${atributos[e.key] ?? 0}/${e.value}")
+        .join('\n');
+
+    showCustomDialog(
+      icon: Icons.star,
+      title: 'Nova Oportunidade!',
+      description: 'Você atingiu os requisitos para o cargo de $novoCargo!',
+      secondaryText:
+          '📈 XP atual: $xp / Requerido: $xpNecessario\n\nRequisitos:\n$requisitosTexto',
+      primaryButtonText: 'Aceitar',
+      onPrimaryPressed: () {
+        setState(() async {
+          cargo = novoCargo;
+          await AtributosStorage.salvarCargo(novoCargo);
+          adicionarConquista("Se tornou $cargo");
+          adicionarAoFeed(
+            "$anoAtual: Aceitou o desafio e assumiu o cargo de $cargo com entusiasmo.",
+          );
+          _confettiController.play();
+        });
+      },
+      secondaryButtonText: 'Recusar',
+      onSecondaryPressed: () {
+        setState(() {
+          xp = (xp / 2).floor();
+          cargosRecusados[novoCargo] = anoAtual;
+          adicionarAoFeed(
+            "$anoAtual: Recusou a chance de se tornar $novoCargo e perdeu metade do XP.",
+          );
+        });
+      },
     );
   }
 
@@ -832,174 +1179,240 @@ $reqText
     }
   }
 
-  void _oferecerPromocao(
-    String novoCargo,
-    int xpNecessario,
-    Map<String, int> requisitos,
-  ) {
+  void showRandomDialog() {
     final anoAtual = DateTime.now().year + idade.floor() - 18;
-    final requisitosTexto = requisitos.entries
-        .map((e) => "- ${e.key}: ${atributos[e.key] ?? 0}/${e.value}")
-        .join('\n');
-
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Color(0xFF2E003E),
-        title: Text(
-          'Nova oportunidade: $novoCargo',
-          style: const TextStyle(color: Color(0xFFD1B3FF)),
-        ),
-        content: Text(
-          'Você atingiu os requisitos para o cargo de $novoCargo!\n\n'
-          'XP atual: $xp / Requerido: $xpNecessario\n\n'
-          'Requisitos de atributos:\n$requisitosTexto\n\n'
-          'Deseja aceitar a promoção?',
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() async {
-                cargo = novoCargo;
-                await AtributosStorage.salvarCargo(novoCargo);
-                adicionarConquista("Se tornou $cargo");
-                adicionarAoFeed(
-                  "$anoAtual: Aceitou o desafio e assumiu o cargo de $cargo com entusiasmo.",
-                );
-                _confettiController.play();
-              });
-            },
-            child: const Text(
-              'Aceitar',
-              style: TextStyle(color: Colors.greenAccent),
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.event,
+                        size: 48,
+                        color: Color(0xFFE1BEE7),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Evento Aleatório',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Color(0xFFD1B3FF),
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Você foi convidado para uma reunião surpresa do clube. Deseja participar?',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white70, fontSize: 16),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              adicionarAoFeed(
+                                "$anoAtual: Você ignorou uma reunião do clube.",
+                              );
+                            },
+                            child: const Text(
+                              'Ignorar',
+                              style: TextStyle(color: Colors.redAccent),
+                            ),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF6A1B9A),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                                horizontal: 20,
+                              ),
+                            ),
+                            onPressed: () {
+                              Navigator.pop(context);
+                              applyChanges(AcaoTipo.ParticiparReuniao, {
+                                'xp': 10,
+                                'felicidade': 5,
+                              });
+                            },
+                            child: const Text(
+                              'Participar',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() {
-                xp = (xp / 2).floor();
-                cargosRecusados[novoCargo] = anoAtual;
-                adicionarAoFeed(
-                  "$anoAtual: Recusou a chance de se tornar $novoCargo naquele momento e perdeu metade do XP.",
-                );
-              });
-            },
-            child: const Text(
-              'Recusar',
-              style: TextStyle(color: Colors.redAccent),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   void showEventoEspecial(String nomeEvento, {bool contaComoAcao = true}) {
     final Map<String, String> descricoesEventos = {
       'EventoEspecialJALC':
-          'Jornada de Aprendizado e Liderança do Clube. Um dos maiores eventos de formação para jovens líderes.',
+          'Jornada de Aprendizado e Liderança do Clube. Um dos maiores eventos de formação.',
       'EventoEspecialSEDEL':
-          'Seminário de Desenvolvimento de Lideranças. Um espaço para fortalecer competências e valores do movimento.',
+          'Seminário de Desenvolvimento de Lideranças. Fortaleça competências e valores.',
       'EventoEspecialACAMPALEO':
-          'Acampamento LEO de integração e vivências ao ar livre com outros clubes.',
+          'Acampamento LEO de integração com outros clubes.',
       'EventoEspecialEncontro de Região':
-          'Reunião entre clubes da mesma região para alinhar projetos e fortalecer laços.',
+          'Reunião entre clubes da região para alinhar projetos.',
       'EventoEspecialCONFE':
-          'Conferência Final de Encerramento. Celebração anual dos resultados e trajetórias dos membros.',
+          'Conferência Final. Celebração anual dos resultados.',
     };
 
     final descricao =
         descricoesEventos[nomeEvento] ?? 'Evento especial do clube.';
-    AcaoTipo? tipoEvento = AcaoTipo.values.firstWhere(
+
+    AcaoTipo tipoEvento = AcaoTipo.values.firstWhere(
       (e) => e.name == 'EventoEspecial${nomeEvento.replaceAll(' ', '')}',
       orElse: () => AcaoTipo.Campanha,
     );
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF3A0A5D),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Text(
-          '📅 Evento Especial: $nomeEvento',
-          style: const TextStyle(
-            color: Color(0xFFE1BEE7),
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          '$descricao\n\nVocê foi convidado para o evento $nomeEvento! Deseja participar? Custa 30 de dinheiro.',
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              applyChanges(tipoEvento, {
-                'xp': 15,
-                'felicidade': 10,
-                'dinheiro': -30,
-                'contaComoAcao': contaComoAcao,
-              });
-            },
-            child: const Text(
-              'Participar',
-              style: TextStyle(color: Colors.greenAccent),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              adicionarAoFeed("$anoAtual: Recusou o evento $nomeEvento.");
-            },
-            child: const Text(
-              'Recusar',
-              style: TextStyle(color: Colors.redAccent),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  void showRandomDialog() {
+    final anoAtual = DateTime.now().year + idade.floor() - 18;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Color(0xFF2E003E),
-        title: const Text(
-          '🤔 Evento Aleatório',
-          style: TextStyle(color: Color(0xFFD1B3FF)),
-        ),
-        content: const Text(
-          'Você foi convidado para uma reunião surpresa do clube. Deseja participar?',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              applyChanges(AcaoTipo.ParticiparReuniao, {
-                'xp': 10,
-                'felicidade': 5,
-              });
-            },
-            child: const Text('Participar'),
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              adicionarAoFeed(
-                "${DateTime.now().year + idade.floor() - 18}: Você ignorou uma reunião do clube.",
-              );
-            },
-            child: const Text('Ignorar'),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: 400, // 👈 Máximo 400px de largura
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.event,
+                        size: 48,
+                        color: Color(0xFFE1BEE7),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Evento Especial',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xFFD1B3FF),
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        descricao,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Custa 30 de dinheiro.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white54, fontSize: 14),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              adicionarAoFeed(
+                                "$anoAtual: Recusou o evento $nomeEvento.",
+                              );
+                            },
+                            child: const Text(
+                              'Recusar',
+                              style: TextStyle(color: Colors.redAccent),
+                            ),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF6A1B9A),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                                horizontal: 20,
+                              ),
+                            ),
+                            onPressed: () {
+                              Navigator.pop(context);
+                              applyChanges(tipoEvento, {
+                                'xp': 15,
+                                'felicidade': 10,
+                                'dinheiro': -30,
+                                'contaComoAcao': contaComoAcao,
+                              });
+                            },
+                            child: const Text(
+                              'Participar',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -1012,7 +1425,7 @@ $reqText
       {
         'titulo': 'Escolher Ação',
         'texto':
-            'Toque em "Escolher Ação" para avançar, evoluir e viver novas experiências!',
+            'Toque em "Nova Ação" no botão flutuante para avançar e viver novas experiências!',
       },
       {
         'titulo': 'Status',
@@ -1021,7 +1434,7 @@ $reqText
       {
         'titulo': 'Distribua Pontos',
         'texto':
-            'Toque no botão de perfil quando tiver pontos disponíveis para evoluir atributos.',
+            'Toque no botão de perfil quando tiver pontos disponíveis para evoluir seus atributos.',
       },
       {
         'titulo': 'Conquistas',
@@ -1038,53 +1451,101 @@ $reqText
         return StatefulBuilder(
           builder: (context, setModalState) {
             final page = paginas[currentIndex];
-            return AlertDialog(
-              backgroundColor: const Color(0xFF2E003E),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 24,
               ),
-              title: Text(
-                page['titulo']!,
-                style: const TextStyle(
-                  color: Color(0xFFD1B3FF),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                ),
-              ),
-              content: Text(
-                page['texto']!,
-                style: const TextStyle(color: Colors.white70),
-              ),
-              actions: [
-                if (currentIndex < paginas.length - 1)
-                  TextButton(
-                    onPressed: () {
-                      setModalState(() {
-                        currentIndex++;
-                      });
-                    },
-                    child: const Text(
-                      'Próximo',
-                      style: TextStyle(color: Color(0xFFD1B3FF)),
-                    ),
-                  )
-                else
-                  TextButton(
-                    onPressed: () async {
-                      Navigator.pop(context);
-                      final prefs = await AtributosStorage.getPrefs();
-                      await prefs.setBool('tutorial_visto', true);
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 400),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(28),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(28),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.1),
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.school,
+                            size: 48,
+                            color: Color(0xFFE1BEE7),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            page['titulo']!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Color(0xFFD1B3FF),
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            page['texto']!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF6A1B9A),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                              ),
+                              onPressed: () async {
+                                if (currentIndex < paginas.length - 1) {
+                                  setModalState(() {
+                                    currentIndex++;
+                                  });
+                                } else {
+                                  Navigator.pop(context);
+                                  final prefs =
+                                      await AtributosStorage.getPrefs();
+                                  await prefs.setBool('tutorial_visto', true);
 
-                      // Espera um frame pra garantir que o dialog anterior fechou
-                      await Future.delayed(const Duration(milliseconds: 100));
-                      showDistribuicaoInicial();
-                    },
-                    child: const Text(
-                      'Começar',
-                      style: TextStyle(color: Color(0xFFD1B3FF)),
+                                  await Future.delayed(
+                                    const Duration(milliseconds: 100),
+                                  );
+                                  showDistribuicaoInicial();
+                                }
+                              },
+                              child: Text(
+                                currentIndex < paginas.length - 1
+                                    ? 'Próximo'
+                                    : 'Começar',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-              ],
+                ),
+              ),
             );
           },
         );
@@ -1119,16 +1580,108 @@ $reqText
   }
 
   Widget buildStatusBar() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: [
-        statusIcon(Icons.attach_money, dinheiro.toString(), 'dinheiro'),
-        statusIcon(Icons.school, inteligencia.toString(), 'inteligencia'),
-        statusIcon(Icons.favorite, saude.toString(), 'saude'),
-        statusIcon(Icons.emoji_emotions, felicidade.toString(), 'felicidade'),
-        statusIcon(Icons.star, xp.toString(), 'xp'),
-        statusIcon(Icons.fitness_center, '$pontosDeAtributo', 'atributos'),
-      ],
+    final List<Map<String, dynamic>> statusItems = [
+      {
+        'icon': Icons.attach_money,
+        'label': 'Dinheiro',
+        'value': dinheiro.toString(),
+        'key': 'dinheiro',
+      },
+      {
+        'icon': Icons.school,
+        'label': 'Inteligência',
+        'value': inteligencia.toString(),
+        'key': 'inteligencia',
+      },
+      {
+        'icon': Icons.favorite,
+        'label': 'Saúde',
+        'value': saude.toString(),
+        'key': 'saude',
+      },
+      {
+        'icon': Icons.emoji_emotions,
+        'label': 'Felicidade',
+        'value': felicidade.toString(),
+        'key': 'felicidade',
+      },
+      {'icon': Icons.star, 'label': 'XP', 'value': xp.toString(), 'key': 'xp'},
+      {
+        'icon': Icons.fitness_center,
+        'label': 'Atributos',
+        'value': '$pontosDeAtributo',
+        'key': 'atributos',
+      },
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: statusItems.map((item) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: SizedBox(
+              width: 90, // <-- define largura igual para todos
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                ),
+                child: statusIconWithLabel(
+                  item['icon'] as IconData,
+                  item['value'] as String,
+                  item['label'] as String,
+                  item['key'] as String,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget statusIconWithLabel(
+    IconData icon,
+    String value,
+    String label,
+    String keyName,
+  ) {
+    final animation = statusAnimations[keyName]!;
+
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: animation.value,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                color: const Color.fromARGB(255, 230, 192, 255),
+                size: 28,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -1203,20 +1756,43 @@ $reqText
           IconButton(
             icon: const Icon(Icons.emoji_events),
             onPressed: () {
-              navigateWithTransition(
+              Navigator.push(
                 context,
-                ConquistasScreen(
-                  onPontoResgatado: () async {
-                    final novosPontos = await AtributosStorage.carregarPontos();
-                    setState(() {
-                      pontosDeAtributo = novosPontos;
-                    });
-                  },
-                ),
-              );
+                MaterialPageRoute(builder: (_) => ConquistasScreen()),
+              ).then((resultado) async {
+                if (resultado == true) {
+                  final novosPontos = await AtributosStorage.carregarPontos();
+                  setState(() {
+                    pontosDeAtributo = novosPontos;
+                  });
+                }
+              });
             },
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: const Color(0xFF6A1B9A),
+
+        label: const Text(
+          'Nova Ação',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        onPressed: () {
+          navigateWithTransition(
+            context,
+            ActionsScreen(
+              onActionSelected: (effects, label) {
+                final tipo = AcaoTipo.values.firstWhere(
+                  (e) => e.name == label.replaceAll(' ', ''),
+                  orElse: () => AcaoTipo.Trabalhar,
+                );
+                applyChanges(tipo, effects);
+              },
+              onShowInfo: (info) => showDialogMessage('Informações', info),
+            ),
+          );
+        },
       ),
       body: AnimatedBuilder(
         animation: _colorController,
@@ -1254,127 +1830,79 @@ $reqText
                       ),
                     ),
                     Expanded(
-                      child: ListView.builder(
-                        controller: _scrollController,
-                        itemCount: story.length,
-                        itemBuilder: (context, index) {
-                          final texto = story[index];
-                          final partes = texto.split(': ');
-                          final ano = partes.first;
-                          final descricao = partes.length > 1
-                              ? partes.sublist(1).join(': ')
-                              : '';
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 6,
-                            ),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF3A0A5D).withOpacity(0.3),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Colors.deepPurple.shade900.withOpacity(
-                                    0.5,
-                                  ),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 700),
+                          child: ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            itemCount: story.length,
+                            itemBuilder: (context, index) {
+                              final texto = story[index];
+                              final partes = texto.split(': ');
+                              final ano = partes.first;
+                              final descricao = partes.length > 1
+                                  ? partes.sublist(1).join(': ')
+                                  : '';
+                              return Container(
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
                                 ),
-                              ),
-                              padding: const EdgeInsets.all(14),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Icon(
-                                    Icons.event_note,
-                                    color: Color(0xFFD1B3FF),
-                                    size: 24,
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.1),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          ano,
-                                          style: const TextStyle(
-                                            fontFamily: 'Poppins',
-                                            color: Color.fromARGB(
-                                              255,
-                                              236,
-                                              224,
-                                              255,
-                                            ),
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          descricao,
-                                          style: const TextStyle(
-                                            fontFamily: 'Poppins',
-                                            color: Color.fromARGB(
-                                              255,
-                                              236,
-                                              224,
-                                              255,
-                                            ),
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ],
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.2),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0,
-                        vertical: 10,
-                      ),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color.fromARGB(
-                              255,
-                              44,
-                              3,
-                              70,
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                          ),
-                          onPressed: () {
-                            navigateWithTransition(
-                              context,
-                              ActionsScreen(
-                                onActionSelected: (effects, label) {
-                                  final tipo = AcaoTipo.values.firstWhere(
-                                    (e) => e.name == label.replaceAll(' ', ''),
-                                    orElse: () => AcaoTipo.Trabalhar,
-                                  );
-                                  applyChanges(tipo, effects);
-                                },
-                                onShowInfo: (info) =>
-                                    showDialogMessage('Info: ', info),
-                              ),
-                            );
-                          },
-                          child: const Text(
-                            'Escolher Ação',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
+                                  ],
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(
+                                      Icons.event_note,
+                                      color: Color(0xFFD1B3FF),
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            ano,
+                                            style: const TextStyle(
+                                              fontFamily: 'Poppins',
+                                              color: Color(0xFFE1BEE7),
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            descricao,
+                                            style: const TextStyle(
+                                              fontFamily: 'Poppins',
+                                              color: Colors.white,
+                                              fontSize: 15,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
                         ),
                       ),
@@ -1390,9 +1918,9 @@ $reqText
                     blastDirectionality: BlastDirectionality.explosive,
                     shouldLoop: false,
                     colors: [
-                      Color(0xFFFFD54F),
+                      const Color(0xFFFFD54F),
                       Colors.white,
-                      Color(0xFFFF7043),
+                      const Color(0xFFFF7043),
                     ],
                     emissionFrequency: 0.05,
                     numberOfParticles: 20,

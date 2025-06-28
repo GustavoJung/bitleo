@@ -28,9 +28,7 @@ class Conquista {
 }
 
 class ConquistasScreen extends StatefulWidget {
-  final VoidCallback onPontoResgatado;
-
-  const ConquistasScreen({super.key, required this.onPontoResgatado});
+  const ConquistasScreen({super.key});
 
   @override
   State<ConquistasScreen> createState() => _ConquistasScreenState();
@@ -98,7 +96,6 @@ class _ConquistasScreenState extends State<ConquistasScreen> {
     int pontosAtuais = await AtributosStorage.carregarPontos();
     await AtributosStorage.salvarPontos(pontosAtuais + 1);
     await ConquistaService.registrarResgate(titulo);
-    widget.onPontoResgatado();
   }
 
   void _mostrarDetalhes(Conquista conquista) async {
@@ -160,49 +157,64 @@ class _ConquistasScreenState extends State<ConquistasScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final total = conquistas.length;
+    // Conta as desbloqueadas
     final desbloqueadas = conquistas.where((c) => c.desbloqueada).length;
+    final total = conquistas.length;
 
-    return Scaffold(
-      appBar: buildCustomAppBar('Minhas Conquistas'),
-      backgroundColor: const Color(0xFF3B1E5C),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Text(
-                    '$desbloqueadas de $total conquistas desbloqueadas',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pop(context, true);
+        return false; // Cancela o pop automático
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Conquistas'),
+          backgroundColor: const Color(0xFF2E003E),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              Navigator.pop(context, true);
+            },
+          ),
+        ),
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Text(
+                      '$desbloqueadas de $total conquistas desbloqueadas',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                ),
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 16,
-                  children: conquistas.map((conquista) {
-                    return MouseRegion(
-                      cursor: conquista.desbloqueada
-                          ? SystemMouseCursors.click
-                          : SystemMouseCursors.basic,
-                      child: GestureDetector(
-                        onTap: () => _mostrarDetalhes(conquista),
-                        child: ConquistaCard(conquista: conquista),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-          );
-        },
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    children: conquistas.map((conquista) {
+                      return MouseRegion(
+                        cursor: conquista.desbloqueada
+                            ? SystemMouseCursors.click
+                            : SystemMouseCursors.basic,
+                        child: GestureDetector(
+                          onTap: () => _mostrarDetalhes(conquista),
+                          child: ConquistaCard(conquista: conquista),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
