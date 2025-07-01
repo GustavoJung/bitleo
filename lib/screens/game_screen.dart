@@ -1850,7 +1850,8 @@ $reqText
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             itemCount: story.length,
                             itemBuilder: (context, index) {
-                              final texto = story[index];
+                              final reversedStory = story.reversed.toList();
+                              final texto = reversedStory[index];
                               final partes = texto.split(': ');
                               final ano = partes.first;
                               final descricao = partes.length > 1
