@@ -303,6 +303,21 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  Map<String, dynamic>? getProximoCargoInfo() {
+    for (var c in cargos) {
+      final nomeCargo = c['nome'];
+      final xpRequerido = c['xp'];
+      final requisitos = Map<String, int>.from(c['requisitos'] ?? {});
+      bool cargoAtualEhInferior =
+          cargos.indexWhere((e) => e['nome'] == cargo) < cargos.indexOf(c);
+
+      if (cargoAtualEhInferior) {
+        return {'nome': nomeCargo, 'xp': xpRequerido, 'requisitos': requisitos};
+      }
+    }
+    return null; // Já está no cargo máximo
+  }
+
   String getProximoCargoPreview() {
     for (var c in cargos) {
       final nomeCargo = c['nome'];
@@ -1697,6 +1712,68 @@ $reqText
     );
   }
 
+  Widget buildObjetivoWidget() {
+    final info = getProximoCargoInfo();
+    if (info == null) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+          ),
+          child: const Text(
+            '🎉 Você já atingiu o cargo máximo!',
+            style: TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ),
+      );
+    }
+
+    final nome = info['nome'];
+    final xpNecessario = info['xp'] as int;
+    final requisitos = info['requisitos'] as Map<String, int>;
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.1)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '🎯 Objetivo Atual: $nome',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'XP necessário: $xpNecessario (atual: $xp)',
+              style: const TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 8),
+            ...requisitos.entries.map(
+              (e) => Text(
+                '${e.key}: ${atributos[e.key] ?? 0}/${e.value}',
+                style: const TextStyle(color: Colors.white70),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1784,11 +1861,14 @@ $reqText
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: const Color(0xFF6A1B9A),
-
+        backgroundColor: Colors.white,
         label: const Text(
-          'Nova Ação',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          'Nova atividade',
+          style: TextStyle(
+            color: Color(0xFF6A1B9A),
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
         ),
         onPressed: () {
           navigateWithTransition(
@@ -1802,6 +1882,14 @@ $reqText
                 applyChanges(tipo, effects);
               },
               onShowInfo: (info) => showDialogMessage('Informações', info),
+              status: {
+                'saude': saude,
+                'felicidade': felicidade,
+                'inteligencia': inteligencia,
+                'dinheiro': dinheiro,
+                'xp': xp
+              },
+              atributos: atributos,
             ),
           );
         },
@@ -1841,6 +1929,7 @@ $reqText
                         ),
                       ),
                     ),
+                    buildObjetivoWidget(),
                     Expanded(
                       child: Center(
                         child: ConstrainedBox(

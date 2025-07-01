@@ -6,11 +6,15 @@ import '../services/conquistas_service.dart';
 class ActionsScreen extends StatelessWidget {
   final Function(Map<String, dynamic>, String) onActionSelected;
   final Function(String) onShowInfo;
+  final Map<String, int> status;
+  final Map<String, int> atributos;
 
   const ActionsScreen({
     super.key,
     required this.onActionSelected,
     required this.onShowInfo,
+    required this.status,
+    required this.atributos,
   });
 
   void showInfoDialog(BuildContext context, String title, String description) {
@@ -96,20 +100,81 @@ class ActionsScreen extends StatelessWidget {
     );
   }
 
-  bool canPerformAction(Map<String, dynamic> action, Map<String, int> status) {
+  String getRequirementMessage(
+    Map<String, dynamic> action,
+    Map<String, int> status,
+    Map<String, int> atributos,
+  ) {
+    List<String> mensagens = [];
+
+    if ((action['label'] == 'Trabalhar' || action['label'] == 'Campanha') &&
+        status['saude']! < 30) {
+      mensagens.add(
+        'Aumente sua saúde para realizar esta ação. Saúde necessária: 30 (atual: ${status['saude']})',
+      );
+    }
+    if ((action['label'] == 'Campanha' || action['label'] == 'Estudar') &&
+        status['felicidade']! < 20) {
+      mensagens.add(
+        'Aumente sua felicidade. Felicidade necessária: 20 (atual: ${status['felicidade']})',
+      );
+    }
+    if (action['label'] == 'Estudar' && status['inteligencia']! < 15) {
+      mensagens.add(
+        'Aumente sua inteligência. Inteligência necessária: 15 (atual: ${status['inteligencia']})',
+      );
+    }
+
+    final reqs = action['requisitos'] as Map<String, int>?;
+    if (reqs != null) {
+      for (final entry in reqs.entries) {
+        final atual = atributos[entry.key] ?? 0;
+        if (atual < entry.value) {
+          mensagens.add(
+            'Aumente seu atributo ${entry.key}. Necessário: ${entry.value} (atual: $atual)',
+          );
+        }
+      }
+    }
+
+    if (mensagens.isEmpty) {
+      return 'Você não pode realizar esta ação no momento.';
+    }
+
+    return mensagens.join('\n');
+  }
+
+  bool canPerformAction(
+    Map<String, dynamic> action,
+    Map<String, int> status,
+    Map<String, int> atributos,
+  ) {
+    // Pré-requisitos fixos
     if ((action['label'] == 'Trabalhar' || action['label'] == 'Campanha') &&
         status['saude']! < 30)
       return false;
     if ((action['label'] == 'Campanha' || action['label'] == 'Estudar') &&
         status['felicidade']! < 20)
       return false;
-    if (action['label'] == 'Estudar' && status['inteligencia']! < 15)
-      return false;
+    if (action['label'] == 'Estudar' && status['saude']! < 15) return false;
+
+    // Pré-requisitos dinâmicos
+    final reqs = action['requisitos'] as Map<String, int>?;
+    if (reqs != null) {
+      for (final entry in reqs.entries) {
+        if ((atributos[entry.key] ?? 0) < entry.value) return false;
+      }
+    }
+
     return true;
   }
 
-  String requirementText(Map<String, dynamic> action) {
+  String requirementText(
+    Map<String, dynamic> action,
+    Map<String, int> atributos,
+  ) {
     List<String> reqs = [];
+
     if (action['label'] == 'Trabalhar' || action['label'] == 'Campanha') {
       reqs.add('Saúde ≥ 30');
     }
@@ -119,13 +184,23 @@ class ActionsScreen extends StatelessWidget {
     if (action['label'] == 'Estudar') {
       reqs.add('Inteligência ≥ 15');
     }
+
+    final dinamicReqs = action['requisitos'] as Map<String, int>?;
+    if (dinamicReqs != null) {
+      for (final entry in dinamicReqs.entries) {
+        final atual = atributos[entry.key] ?? 0;
+        reqs.add('${entry.key} ≥ ${entry.value} (atual: $atual)');
+      }
+    }
+
     return reqs.join(', ');
   }
 
   @override
   Widget build(BuildContext context) {
-    final status =
-        ModalRoute.of(context)?.settings.arguments as Map<String, int>? ?? {};
+    final status = this.status;
+    final atributos = this.atributos;
+
     final actions = [
       {
         'label': 'Trabalhar',
@@ -180,6 +255,7 @@ class ActionsScreen extends StatelessWidget {
         'icon': Icons.support,
         'effects': {'empatia': 3, 'xp': 4, 'felicidade': 2},
         'info': 'Mentorar ajuda a crescer como líder e aumenta empatia.',
+        'requisitos': {'Liderança': 10},
       },
       {
         'label': 'Redes Sociais',
@@ -208,8 +284,8 @@ class ActionsScreen extends StatelessWidget {
             itemCount: actions.length,
             itemBuilder: (context, index) {
               final action = actions[index];
-              final pode = true; //canPerformAction(action, status);
-              final reqText = requirementText(action);
+              final pode = canPerformAction(action, status, atributos);
+              final reqText = requirementText(action, atributos);
 
               final String label = action['label'] as String;
               final String description = action['description'] as String;
@@ -257,7 +333,9 @@ class ActionsScreen extends StatelessWidget {
                             ),
                           ),
                           trailing: Tooltip(
-                            message: pode ? 'Saiba mais' : reqText,
+                            message: pode
+                                ? 'Saiba mais'
+                                : 'Você não pode realizar esta ação.\nRequisitos:\n$reqText',
                             child: IconButton(
                               icon: Icon(
                                 Icons.info_outline,
@@ -267,22 +345,28 @@ class ActionsScreen extends StatelessWidget {
                                   showInfoDialog(context, label, info),
                             ),
                           ),
+
                           onTap: pode
                               ? () {
                                   Navigator.pop(context);
                                   onActionSelected(effects, label);
                                 }
                               : () {
+                                  final mensagem = getRequirementMessage(
+                                    action,
+                                    status,
+                                    atributos,
+                                  );
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
-                                        'Não pode: $reqText',
+                                        mensagem,
                                         style: const TextStyle(
                                           color: Colors.white,
                                         ),
                                       ),
                                       backgroundColor: Colors.deepPurple,
-                                      duration: const Duration(seconds: 2),
+                                      duration: const Duration(seconds: 4),
                                     ),
                                   );
                                 },

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1023074990514",
+    "project_id": "bitleo-48fad",
+    "storage_bucket": "bitleo-48fad.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1023074990514:android:d3f7466629e7fae0924cab",
+        "android_client_info": {
+          "package_name": "com.example.bitleo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDXJqpHb_jYtLLn6glwGim_nuf07helNRs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
