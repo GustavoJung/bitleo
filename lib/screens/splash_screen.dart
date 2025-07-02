@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:animated_background/animated_background.dart';
-import '../services/atributos_storage.dart';
+import '../services/firestore_service.dart';
 import 'game_screen.dart';
 import 'name_screen.dart';
 
@@ -37,28 +36,14 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _navigate() async {
     await Future.delayed(const Duration(seconds: 2));
-    final nome = await AtributosStorage.carregarNomeJogador();
+
+    // Garante que o documento do usuário existe no Firestore
+    await FirestoreService.verificarInicializacao();
+
+    // Carrega nome do jogador do Firestore
+    final nome = await FirestoreService.carregarNomeJogador();
 
     if (nome != null && nome.isNotEmpty) {
-      var pontos = await AtributosStorage.carregarPontos();
-
-      final prefs = await SharedPreferences.getInstance();
-      final jaIniciou = prefs.getBool('atributosIniciaisSalvos') ?? false;
-
-      if (!jaIniciou) {
-        await AtributosStorage.salvarPontos(3);
-        await AtributosStorage.salvar({
-          'Oratória': 0,
-          'Liderança': 0,
-          'Empatia': 0,
-          'Organização': 0,
-        });
-        await prefs.setBool('atributosIniciaisSalvos', true);
-        pontos = 3;
-      }
-
-      final confirmPontos = await AtributosStorage.carregarPontos();
-
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => GameScreen(nome: nome)),

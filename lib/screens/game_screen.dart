@@ -1,9 +1,13 @@
 import 'dart:math';
 import 'dart:ui';
+import 'package:bitleo/screens/name_screen.dart';
+import 'package:bitleo/services/CooldownHelper.dart';
 import 'package:bitleo/services/action_messages.dart';
+import 'package:bitleo/services/firestore_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'actions_screen.dart';
 import 'profile_screen.dart';
 import 'conquistas_screen.dart';
@@ -150,10 +154,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     anoAnterior = anoReal;
 
     () async {
-      await AtributosStorage.verificarInicializacao();
+      await FirestoreService.verificarInicializacao();
 
-      final prefs = await AtributosStorage.getPrefs();
-      final viuTutorial = prefs.getBool('tutorial_visto') ?? false;
+      final viuTutorial = await FirestoreService.carregarTutorialVisto();
       if (!viuTutorial) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           showTutorial();
@@ -161,12 +164,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       }
 
       final results = await Future.wait([
-        AtributosStorage.carregarStatus(),
-        AtributosStorage.carregar(),
-        AtributosStorage.carregarDistribuicaoInicial(),
-        AtributosStorage.carregarPontos(),
-        AtributosStorage.carregarUltimoXPParaPontos(),
-        AtributosStorage.carregarHistorico(),
+        FirestoreService.carregarStatus(),
+        FirestoreService.carregar(),
+        FirestoreService.carregarDistribuicaoInicial(),
+        FirestoreService.carregarPontos(),
+        FirestoreService.carregarUltimoXPParaPontos(),
+        FirestoreService.carregarHistorico(),
       ]);
 
       final status = results[0] as Map<String, dynamic>;
@@ -177,7 +180,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       final historico = results[5] as List<String>;
       final conquistasSalvas = await ConquistaService.carregarConquistas();
 
-      String auxCargo = await AtributosStorage.carregarCargo();
+      String auxCargo = await FirestoreService.carregarCargo();
       await ConquistaService.marcarInicioDoJogo();
 
       setState(() {
@@ -199,18 +202,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
       updateCargo();
     }();
-
-    AtributosStorage.salvarStatus({
-      'dinheiro': dinheiro,
-      'inteligencia': inteligencia,
-      'felicidade': felicidade,
-      'saude': saude,
-      'idade': idade,
-      'xp': xp,
-      'cargo': cargo,
-    });
-    AtributosStorage.salvar(atributos);
-    AtributosStorage.salvarPontos(pontosDeAtributo);
 
     _colorController = AnimationController(
       vsync: this,
@@ -282,7 +273,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void salvarDadosStatus() {
-    AtributosStorage.salvarStatus({
+    FirestoreService.salvarStatus({
       'dinheiro': dinheiro,
       'inteligencia': inteligencia,
       'felicidade': felicidade,
@@ -418,11 +409,14 @@ $reqText
                                     ),
                                     onPressed: pontosDeAtributo > 0
                                         ? () {
+                                            // Atualiza modal e estado principal
                                             setModalState(() {
                                               atributos[key] =
                                                   (atributos[key] ?? 0) + 1;
                                             });
                                             setState(() {
+                                              atributos[key] =
+                                                  (atributos[key] ?? 0) + 1;
                                               pontosDeAtributo--;
                                             });
                                           }
@@ -449,127 +443,38 @@ $reqText
                                 if (pontosDeAtributo > 0) {
                                   final continuar = await showDialog<bool>(
                                     context: context,
-                                    builder: (ctx) => Dialog(
-                                      backgroundColor: Colors.transparent,
-                                      insetPadding: const EdgeInsets.all(24),
-                                      child: ConstrainedBox(
-                                        constraints: const BoxConstraints(
-                                          maxWidth: 400,
-                                        ),
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(
-                                            28,
-                                          ),
-                                          child: BackdropFilter(
-                                            filter: ImageFilter.blur(
-                                              sigmaX: 20,
-                                              sigmaY: 20,
-                                            ),
-                                            child: Container(
-                                              padding: const EdgeInsets.all(24),
-                                              decoration: BoxDecoration(
-                                                color: Colors.black.withOpacity(
-                                                  0.5,
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(28),
-                                                border: Border.all(
-                                                  color: Colors.white
-                                                      .withOpacity(0.1),
-                                                ),
-                                              ),
-                                              child: Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  const Icon(
-                                                    Icons.warning,
-                                                    size: 48,
-                                                    color: Colors.amber,
-                                                  ),
-                                                  const SizedBox(height: 12),
-                                                  const Text(
-                                                    'Pontos Restantes',
-                                                    textAlign: TextAlign.center,
-                                                    style: TextStyle(
-                                                      color: Color(0xFFD1B3FF),
-                                                      fontSize: 20,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 12),
-                                                  Text(
-                                                    'Você ainda tem $pontosDeAtributo ponto(s) não distribuído(s).\nDeseja continuar mesmo assim?',
-                                                    textAlign: TextAlign.center,
-                                                    style: const TextStyle(
-                                                      color: Colors.white70,
-                                                      fontSize: 16,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 20),
-                                                  Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .spaceEvenly,
-                                                    children: [
-                                                      TextButton(
-                                                        onPressed: () =>
-                                                            Navigator.of(
-                                                              ctx,
-                                                            ).pop(false),
-                                                        child: const Text(
-                                                          'Cancelar',
-                                                          style: TextStyle(
-                                                            color: Colors
-                                                                .redAccent,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      ElevatedButton(
-                                                        style: ElevatedButton.styleFrom(
-                                                          backgroundColor:
-                                                              const Color(
-                                                                0xFF6A1B9A,
-                                                              ),
-                                                          shape: RoundedRectangleBorder(
-                                                            borderRadius:
-                                                                BorderRadius.circular(
-                                                                  30,
-                                                                ),
-                                                          ),
-                                                        ),
-                                                        onPressed: () =>
-                                                            Navigator.of(
-                                                              ctx,
-                                                            ).pop(true),
-                                                        child: const Text(
-                                                          'Confirmar',
-                                                          style: TextStyle(
-                                                            color: Colors.white,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ),
+                                    builder: (ctx) => AlertDialog(
+                                      title: const Text('Pontos Restantes'),
+                                      content: Text(
+                                        'Você ainda tem $pontosDeAtributo ponto(s) não distribuído(s).\nDeseja continuar mesmo assim?',
                                       ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(ctx).pop(false),
+                                          child: const Text('Cancelar'),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () =>
+                                              Navigator.of(ctx).pop(true),
+                                          child: const Text('Confirmar'),
+                                        ),
+                                      ],
                                     ),
                                   );
                                   if (continuar != true) return;
                                 }
                                 if (!dadosCarregados) return;
                                 Navigator.of(context).pop();
-                                await AtributosStorage.salvar(atributos);
-                                await AtributosStorage.salvarPontos(
+
+                                await FirestoreService.salvar(atributos);
+                                await FirestoreService.salvarPontos(
                                   pontosDeAtributo,
                                 );
-                                await AtributosStorage.salvarDistribuicaoInicial(
+                                await FirestoreService.salvarDistribuicaoInicial(
                                   true,
                                 );
+
                                 setState(() {
                                   distribuiuPontosIniciais = true;
                                 });
@@ -744,7 +649,7 @@ $reqText
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOut,
     );
-    await AtributosStorage.salvarHistorico(story);
+    await FirestoreService.salvarHistorico(story);
   }
 
   void applyChanges(AcaoTipo tipo, Map<String, dynamic> selected) async {
@@ -752,8 +657,7 @@ $reqText
     setState(() => isProcessing = true);
 
     final identificador = '${tipo.name}_${selected['nome']}';
-    final prefs = await AtributosStorage.getPrefs();
-    String? ultimaAcao = prefs.getString('ultima_acao');
+    final ultimaAcao = await LocalCooldownStorage.carregarUltimaAcao();
 
     // Cooldown: evitar repetição
     if (identificador == ultimaAcao) {
@@ -781,7 +685,7 @@ $reqText
       return;
     }
 
-    await prefs.setString('ultima_acao', identificador);
+    await LocalCooldownStorage.salvarUltimaAcao(identificador);
 
     // Impeditivos
     if ((identificador.contains('trabalhar') ||
@@ -813,7 +717,7 @@ $reqText
     }
 
     // Salvar última ação
-    await prefs.setString('ultima_acao', identificador);
+    await LocalCooldownStorage.salvarUltimaAcao(identificador);
 
     // Evento negativo aleatório (se saúde muito baixa)
     if (saude < 15 && (DateTime.now().millisecondsSinceEpoch % 4 == 0)) {
@@ -830,7 +734,7 @@ $reqText
       adicionarAoFeed(
         "$anoAtual: Quis participar, mas não tinha dinheiro suficiente para a ação.",
       );
-      await AtributosStorage.salvarHistorico(story);
+      await FirestoreService.salvarHistorico(story);
       setState(() => isProcessing = false);
       return;
     }
@@ -843,11 +747,11 @@ $reqText
       pontosDeAtributo += ganho;
       xpAnteriorParaPontos += ganho * 15;
       triggerStatusAnim('atributos');
-      AtributosStorage.salvarUltimoXPParaPontos(xpAnteriorParaPontos);
+      FirestoreService.salvarUltimoXPParaPontos(xpAnteriorParaPontos);
     }
 
-    AtributosStorage.salvar(atributos);
-    AtributosStorage.salvarPontos(pontosDeAtributo);
+    FirestoreService.salvar(atributos);
+    FirestoreService.salvarPontos(pontosDeAtributo);
 
     dinheiro += gasto;
     final intel = ((selected['inteligencia'] ?? 0) as num).toInt();
@@ -864,7 +768,7 @@ $reqText
       totalAcoesDesdeInicioTrimestre++;
     }
 
-    AtributosStorage.salvarStatus({
+    FirestoreService.salvarStatus({
       'dinheiro': dinheiro,
       'inteligencia': inteligencia,
       'felicidade': felicidade,
@@ -1156,7 +1060,7 @@ $reqText
       onPrimaryPressed: () {
         setState(() async {
           cargo = novoCargo;
-          await AtributosStorage.salvarCargo(novoCargo);
+          await FirestoreService.salvarCargo(novoCargo);
           adicionarConquista("Se tornou $cargo");
           adicionarAoFeed(
             "$anoAtual: Aceitou o desafio e assumiu o cargo de $cargo com entusiasmo.",
@@ -1546,9 +1450,9 @@ $reqText
                                   });
                                 } else {
                                   Navigator.pop(context);
-                                  final prefs =
-                                      await AtributosStorage.getPrefs();
-                                  await prefs.setBool('tutorial_visto', true);
+                                  await FirestoreService.salvarTutorialVisto(
+                                    true,
+                                  );
 
                                   await Future.delayed(
                                     const Duration(milliseconds: 100),
@@ -1808,9 +1712,9 @@ $reqText
                         },
                       ),
                     ).then((_) async {
-                      final novosAtributos = await AtributosStorage.carregar();
+                      final novosAtributos = await FirestoreService.carregar();
                       final novosPontos =
-                          await AtributosStorage.carregarPontos();
+                          await FirestoreService.carregarPontos();
                       setState(() {
                         atributos = novosAtributos;
                         pontosDeAtributo = novosPontos;
@@ -1850,13 +1754,37 @@ $reqText
                 MaterialPageRoute(builder: (_) => ConquistasScreen()),
               ).then((resultado) async {
                 if (resultado == true) {
-                  final novosPontos = await AtributosStorage.carregarPontos();
+                  final novosPontos = await FirestoreService.carregarPontos();
                   setState(() {
                     pontosDeAtributo = novosPontos;
                   });
                 }
               });
             },
+          ),
+          OutlinedButton.icon(
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const NameScreen()),
+                (route) => false,
+              );
+            },
+            label: const Text(
+              '-> Sair',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Colors.white),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            ),
           ),
         ],
       ),
@@ -1887,19 +1815,19 @@ $reqText
                 'felicidade': felicidade,
                 'inteligencia': inteligencia,
                 'dinheiro': dinheiro,
-                'xp': xp
+                'xp': xp,
               },
               atributos: atributos,
             ),
           );
         },
       ),
-      body: AnimatedBuilder(
-        animation: _colorController,
-        builder: (context, child) {
-          return Stack(
-            children: [
-              Container(
+      body: Stack(
+        children: [
+          AnimatedBuilder(
+            animation: _colorController,
+            builder: (context, child) {
+              return Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -2011,28 +1939,26 @@ $reqText
                     ),
                   ],
                 ),
-              ),
-              Positioned.fill(
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: ConfettiWidget(
-                    confettiController: _confettiController,
-                    blastDirectionality: BlastDirectionality.explosive,
-                    shouldLoop: false,
-                    colors: [
-                      const Color(0xFFFFD54F),
-                      Colors.white,
-                      const Color(0xFFFF7043),
-                    ],
-                    emissionFrequency: 0.05,
-                    numberOfParticles: 20,
-                    gravity: 0.2,
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
+              );
+            },
+          ),
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirectionality: BlastDirectionality.explosive,
+              shouldLoop: false,
+              colors: [
+                const Color(0xFFFFD54F),
+                Colors.white,
+                const Color(0xFFFF7043),
+              ],
+              emissionFrequency: 0.05,
+              numberOfParticles: 20,
+              gravity: 0.2,
+            ),
+          ),
+        ],
       ),
     );
   }

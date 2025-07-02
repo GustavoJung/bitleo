@@ -1,6 +1,5 @@
 import 'package:bitleo/services/atributos_storage.dart';
 import 'package:flutter/material.dart';
-import '../widgets/custom_appbar.dart';
 import '../services/conquistas_service.dart';
 
 class Conquista {
@@ -93,8 +92,8 @@ class _ConquistasScreenState extends State<ConquistasScreen> {
   }
 
   Future<void> _resgatarRecompensa(String titulo) async {
-    int pontosAtuais = await AtributosStorage.carregarPontos();
-    await AtributosStorage.salvarPontos(pontosAtuais + 1);
+    int pontosAtuais = await AtributosStorageFirestore.carregarPontos();
+    await AtributosStorageFirestore.salvarPontos(pontosAtuais + 1);
     await ConquistaService.registrarResgate(titulo);
   }
 
@@ -180,7 +179,7 @@ class _ConquistasScreenState extends State<ConquistasScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Conquistas'),
-          backgroundColor: const Color(0xFF2E003E),
+          backgroundColor: const Color(0xFF3B1E5C),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () {
@@ -188,43 +187,51 @@ class _ConquistasScreenState extends State<ConquistasScreen> {
             },
           ),
         ),
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Text(
-                      '$desbloqueadas de $total conquistas desbloqueadas',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+        backgroundColor: const Color(
+          0xFF3B1E5C,
+        ), // Garantir cor de fundo do Scaffold
+        body: Container(
+          width: double.infinity,
+          color: const Color(0xFF3B1E5C), // Fundo extra pra cobrir tudo
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 900),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        '$desbloqueadas de $total conquistas desbloqueadas',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                  ),
-                  Wrap(
-                    spacing: 16,
-                    runSpacing: 16,
-                    children: conquistas.map((conquista) {
-                      return MouseRegion(
-                        cursor: conquista.desbloqueada
-                            ? SystemMouseCursors.click
-                            : SystemMouseCursors.basic,
-                        child: GestureDetector(
-                          onTap: () => _mostrarDetalhes(conquista),
-                          child: ConquistaCard(conquista: conquista),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
+                    Wrap(
+                      spacing: 16,
+                      runSpacing: 16,
+                      children: conquistas.map((conquista) {
+                        return MouseRegion(
+                          cursor: conquista.desbloqueada
+                              ? SystemMouseCursors.click
+                              : SystemMouseCursors.basic,
+                          child: GestureDetector(
+                            onTap: () => _mostrarDetalhes(conquista),
+                            child: ConquistaCard(conquista: conquista),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
               ),
-            );
-          },
+            ),
+          ),
         ),
       ),
     );

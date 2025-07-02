@@ -68,10 +68,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> carregarDados() async {
-    final status = await AtributosStorage.carregarStatus();
-    final a = await AtributosStorage.carregar();
-    final p = await AtributosStorage.carregarPontos();
-    final novoCargo = await AtributosStorage.carregarCargo();
+    final status = await AtributosStorageFirestore.carregarStatus();
+    final a = await AtributosStorageFirestore.carregar();
+    final p = await AtributosStorageFirestore.carregarPontos();
+    final novoCargo = await AtributosStorageFirestore.carregarCargo();
+
     setState(() {
       atributos = a;
       pontosRestantes = p;
@@ -139,7 +140,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.amber,
+              backgroundColor: Colors.white,
               foregroundColor: Colors.black,
             ),
             onPressed: () {
@@ -178,7 +179,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     const Icon(
                       Icons.emoji_events,
-                      color: Colors.amber,
+                      color: Colors.white,
                       size: 80,
                     ),
                     const SizedBox(width: 24),
@@ -205,7 +206,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onPressed: () => _showEditDialog(context),
                           child: const Text(
                             'Atualizar Clube',
-                            style: TextStyle(color: Colors.amber),
+                            style: TextStyle(color: Colors.white),
                           ),
                         ),
                       ],
@@ -317,7 +318,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Row(
           children: [
-            Icon(icon, color: Colors.amber, size: 30),
+            Icon(icon, color: Colors.white, size: 30),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -367,7 +368,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               value: progresso.clamp(0.0, 1.0),
               minHeight: 12,
               backgroundColor: Colors.white24,
-              color: atingiuLimite ? Colors.green : Colors.amber,
+              color: atingiuLimite ? Colors.green : Colors.white,
             ),
             const SizedBox(height: 10),
             Row(
@@ -379,17 +380,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: atingiuLimite ? Colors.grey : Colors.amber,
+                    backgroundColor: atingiuLimite ? Colors.grey : Colors.white,
                     foregroundColor: Colors.black,
                   ),
                   onPressed: (!atingiuLimite && pontosRestantes > 0)
-                      ? () {
+                      ? () async {
+                          // Cria nova cópia para garantir consistência
+                          final novosAtributos = Map<String, int>.from(
+                            atributos,
+                          );
+                          novosAtributos[nome] = nivel + 1;
+                          final novosPontos = pontosRestantes - 1;
+
+                          // Salva antes de atualizar a UI
+                          await AtributosStorageFirestore.salvar(
+                            novosAtributos,
+                          );
+                          await AtributosStorageFirestore.salvarPontos(
+                            novosPontos,
+                          );
+
                           setState(() {
-                            atributos[nome] = nivel + 1;
-                            pontosRestantes -= 1;
+                            atributos = novosAtributos;
+                            pontosRestantes = novosPontos;
                           });
-                          AtributosStorage.salvar(atributos);
-                          AtributosStorage.salvarPontos(pontosRestantes);
                         }
                       : null,
                   child: Text(atingiuLimite ? 'Máx' : 'Evoluir'),

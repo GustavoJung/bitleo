@@ -6,6 +6,7 @@ import 'dart:ui';
 import 'package:animated_background/animated_background.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/scheduler.dart';
 
 class NameScreen extends StatefulWidget {
   const NameScreen({super.key});
@@ -16,17 +17,8 @@ class NameScreen extends StatefulWidget {
 
 class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
   final _nomeController = TextEditingController();
-  final _idadeController = TextEditingController();
   final _emailController = TextEditingController();
   final _senhaController = TextEditingController();
-  String? _clubeSelecionado;
-
-  final List<String> clubes = [
-    'LEO Clube Alpha',
-    'LEO Clube Beta',
-    'LEO Clube Gama',
-    'Outro',
-  ];
 
   bool _loading = false;
   bool _isCreatingAccount = false;
@@ -34,19 +26,27 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
   final AuthService _authService = AuthService();
   final FirestoreService _firestoreService = FirestoreService();
 
+  @override
+  void initState() {
+    super.initState();
+
+    _checkLoggedIn();
+  }
+
+  Future<void> _checkLoggedIn() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _goToSplash();
+    }
+  }
+
   Future<void> _registerEmail() async {
     final nome = _nomeController.text.trim();
-    final idade = _idadeController.text.trim();
-    final clube = _clubeSelecionado;
     final email = _emailController.text.trim();
     final senha = _senhaController.text.trim();
     final emailRegex = RegExp(r"^[^@]+@[^@]+\.[^@]+$");
 
-    if (nome.isEmpty ||
-        idade.isEmpty ||
-        clube == null ||
-        email.isEmpty ||
-        senha.isEmpty) {
+    if (nome.isEmpty || email.isEmpty || senha.isEmpty) {
       _showMessage('Preencha todos os campos!');
       return;
     }
@@ -66,19 +66,14 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
         uid: uid,
         data: {
           'nome': nome,
-          'idade': int.parse(idade),
-          'clube': clube,
           'email': email,
           'criadoEm': FieldValue.serverTimestamp(),
         },
       );
 
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const SplashScreen()),
-        );
-      }
+      await _firestoreService.updateUserName(uid, nome);
+
+      _goToSplash();
     } catch (e) {
       _showFirebaseError(e, 'Erro ao registrar.');
     } finally {
@@ -104,14 +99,17 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
     setState(() => _loading = true);
 
     try {
-      await _authService.signInWithEmail(email, senha);
+      final userCredential = await _authService.signInWithEmail(email, senha);
+      final uid = userCredential.user!.uid;
 
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const SplashScreen()),
-        );
+      final doc = await _firestoreService.getUserDocument(uid);
+      final nome = (doc.data()?['nome'] as String?) ?? '';
+
+      if (nome.isNotEmpty) {
+        await _firestoreService.updateUserName(uid, nome);
       }
+
+      _goToSplash();
     } catch (e) {
       _showFirebaseError(e, 'Erro ao fazer login.');
     } finally {
@@ -124,6 +122,7 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
     try {
       final userCredential = await _authService.signInWithGoogle();
       final uid = userCredential.user!.uid;
+      final nome = userCredential.user!.displayName ?? '';
 
       final doc = await _firestoreService.getUserDocument(uid);
 
@@ -131,24 +130,34 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
         await _firestoreService.createUserDocument(
           uid: uid,
           data: {
-            'nome': userCredential.user!.displayName ?? '',
+            'nome': nome,
             'email': userCredential.user!.email ?? '',
             'criadoEm': FieldValue.serverTimestamp(),
           },
         );
+      } else {
+        await _firestoreService.updateUserName(uid, nome);
       }
 
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const SplashScreen()),
-        );
-      }
+      _goToSplash();
     } catch (e) {
       _showFirebaseError(e, 'Erro ao fazer login com Google.');
     } finally {
       setState(() => _loading = false);
     }
+  }
+
+  void _goToSplash() {
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (Navigator.canPop(context)) {
+        Navigator.popAndPushNamed(context, '/splash');
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const SplashScreen()),
+        );
+      }
+    });
   }
 
   void _showMessage(String message) {
@@ -272,39 +281,6 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
                               controller: _nomeController,
                               style: const TextStyle(color: Colors.white),
                               decoration: _inputDecoration('Digite seu nome'),
-                            ),
-                            const SizedBox(height: 12),
-                            TextField(
-                              controller: _idadeController,
-                              keyboardType: TextInputType.number,
-                              style: const TextStyle(color: Colors.white),
-                              decoration: _inputDecoration('Digite sua idade'),
-                            ),
-                            const SizedBox(height: 12),
-                            DropdownButtonFormField<String>(
-                              value: _clubeSelecionado,
-                              dropdownColor: Colors.black87,
-                              decoration: _inputDecoration(
-                                'Selecione seu clube',
-                              ),
-                              items: clubes
-                                  .map(
-                                    (clube) => DropdownMenuItem(
-                                      value: clube,
-                                      child: Text(
-                                        clube,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (value) {
-                                setState(() {
-                                  _clubeSelecionado = value;
-                                });
-                              },
                             ),
                             const SizedBox(height: 12),
                           ],

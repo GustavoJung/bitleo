@@ -1,5 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../screens/name_screen.dart';
 
 /// AppBar simples (sem ações)
 PreferredSizeWidget buildCustomAppBar(String title) {
@@ -14,11 +16,7 @@ PreferredSizeWidget buildCustomAppBar(String title) {
       ),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-        child: Container(
-          color: const Color(
-            0xFF6A1B9A,
-          ).withOpacity(0.6), // Roxo sólido translúcido
-        ),
+        child: Container(color: const Color(0xFF6A1B9A).withOpacity(0.6)),
       ),
     ),
     title: Text(
@@ -63,17 +61,17 @@ PreferredSizeWidget buildCustomAppBarWithActions({
       ),
     ),
     iconTheme: const IconThemeData(color: Colors.white),
-    actions: actions
-        .map(
-          (widget) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Tooltip(
-              message: _getTooltipForAction(widget),
-              child: widget,
-            ),
-          ),
-        )
-        .toList(),
+    actions: actions.map((widget) {
+      // Se for IconButton, adiciona Tooltip baseado no ícone
+      if (widget is IconButton) {
+        final icon = widget.icon;
+        if (icon is Icon) {
+          return Tooltip(message: _getTooltipForAction(widget), child: widget);
+        }
+      }
+      // Se já tiver Tooltip por fora, mantém
+      return widget;
+    }).toList(),
   );
 }
 
@@ -91,10 +89,35 @@ String _getTooltipForAction(Widget widget) {
           return 'Configurações';
         case Icons.help:
           return 'Ajuda';
+        case Icons.logout:
+          return 'Sair';
         default:
           return 'Ação';
       }
     }
   }
   return 'Ação';
+}
+
+/// Botão de logout pronto pra usar no AppBar
+class LogoutButton extends StatelessWidget {
+  const LogoutButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: const Icon(
+        Icons.logout,
+        color: Colors.white, // 👈 cor definida aqui
+      ),
+      onPressed: () async {
+        await FirebaseAuth.instance.signOut();
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const NameScreen()),
+          (route) => false,
+        );
+      },
+    );
+  }
 }
