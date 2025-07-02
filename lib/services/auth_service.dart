@@ -19,9 +19,18 @@ class AuthService {
   }
 
   Future<UserCredential> signInWithGoogle() async {
-    final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+    final GoogleSignIn googleSignIn = GoogleSignIn(
+      clientId:
+          '1023074990514-qoc45ggq1oknbn9j4199r9qofp0cg4kv.apps.googleusercontent.com',
+    );
+
+    final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
     if (googleUser == null) {
-      throw Exception('Login cancelado pelo usuário');
+      throw FirebaseAuthException(
+        code: 'ERROR_ABORTED_BY_USER',
+        message: 'Login cancelado pelo usuário.',
+      );
     }
 
     final GoogleSignInAuthentication googleAuth =
@@ -32,7 +41,7 @@ class AuthService {
       idToken: googleAuth.idToken,
     );
 
-    return await _auth.signInWithCredential(credential);
+    return await FirebaseAuth.instance.signInWithCredential(credential);
   }
 
   Future<UserCredential> signInAnonymously() async {

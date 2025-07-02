@@ -12,7 +12,20 @@
           "package_name": "com.example.bitleo"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1023074990514-374cgfq0116e8n9r9ttvvh2u1v1fg4f5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.bitleo",
+            "certificate_hash": "37a7d6405752f850dc817265dbe11a2fa0b8dd35"
+          }
+        },
+        {
+          "client_id": "1023074990514-jk1tmkqnf9ngff9l8638t1vp11g1h746.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDXJqpHb_jYtLLn6glwGim_nuf07helNRs"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1023074990514-jk1tmkqnf9ngff9l8638t1vp11g1h746.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1023074990514-1jocd6ansna4gtkdc0dqems7okjoa199.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.bitleo"
+              }
+            }
+          ]
         }
       }
     }

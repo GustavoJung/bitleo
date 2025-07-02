@@ -5,6 +5,7 @@ import 'splash_screen.dart';
 import 'dart:ui';
 import 'package:animated_background/animated_background.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class NameScreen extends StatefulWidget {
   const NameScreen({super.key});
@@ -28,6 +29,7 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
   ];
 
   bool _loading = false;
+  bool _isCreatingAccount = false;
 
   final AuthService _authService = AuthService();
   final FirestoreService _firestoreService = FirestoreService();
@@ -38,15 +40,19 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
     final clube = _clubeSelecionado;
     final email = _emailController.text.trim();
     final senha = _senhaController.text.trim();
+    final emailRegex = RegExp(r"^[^@]+@[^@]+\.[^@]+$");
 
     if (nome.isEmpty ||
         idade.isEmpty ||
         clube == null ||
         email.isEmpty ||
         senha.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Preencha todos os campos!')),
-      );
+      _showMessage('Preencha todos os campos!');
+      return;
+    }
+
+    if (!emailRegex.hasMatch(email)) {
+      _showMessage('Informe um e-mail válido!');
       return;
     }
 
@@ -74,9 +80,7 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Erro ao registrar: $e')));
+      _showFirebaseError(e, 'Erro ao registrar.');
     } finally {
       setState(() => _loading = false);
     }
@@ -85,11 +89,15 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
   Future<void> _loginEmail() async {
     final email = _emailController.text.trim();
     final senha = _senhaController.text.trim();
+    final emailRegex = RegExp(r"^[^@]+@[^@]+\.[^@]+$");
 
     if (email.isEmpty || senha.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Informe e-mail e senha!')));
+      _showMessage('Informe e-mail e senha!');
+      return;
+    }
+
+    if (!emailRegex.hasMatch(email)) {
+      _showMessage('Informe um e-mail válido!');
       return;
     }
 
@@ -105,9 +113,7 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Erro ao fazer login: $e')));
+      _showFirebaseError(e, 'Erro ao fazer login.');
     } finally {
       setState(() => _loading = false);
     }
@@ -139,12 +145,62 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Erro ao fazer login: $e')));
+      _showFirebaseError(e, 'Erro ao fazer login com Google.');
     } finally {
       setState(() => _loading = false);
     }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  void _showFirebaseError(Object e, String defaultMessage) {
+    String mensagem = defaultMessage;
+
+    if (e is FirebaseAuthException) {
+      switch (e.code) {
+        case 'invalid-email':
+          mensagem = 'O e-mail informado é inválido.';
+          break;
+        case 'user-disabled':
+          mensagem = 'Este usuário foi desativado.';
+          break;
+        case 'user-not-found':
+          mensagem = 'Usuário não encontrado.';
+          break;
+        case 'wrong-password':
+          mensagem = 'Senha incorreta.';
+          break;
+        case 'email-already-in-use':
+          mensagem = 'Este e-mail já está em uso.';
+          break;
+        case 'operation-not-allowed':
+          mensagem = 'Operação não permitida.';
+          break;
+        case 'weak-password':
+          mensagem = 'A senha é muito fraca.';
+          break;
+        default:
+          mensagem = e.message ?? defaultMessage;
+      }
+    }
+
+    _showMessage(mensagem);
   }
 
   @override
@@ -211,43 +267,47 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 20),
-                          TextField(
-                            controller: _nomeController,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: _inputDecoration('Digite seu nome'),
-                          ),
-                          const SizedBox(height: 12),
-                          TextField(
-                            controller: _idadeController,
-                            keyboardType: TextInputType.number,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: _inputDecoration('Digite sua idade'),
-                          ),
-                          const SizedBox(height: 12),
-                          DropdownButtonFormField<String>(
-                            value: _clubeSelecionado,
-                            dropdownColor: Colors.black87,
-                            decoration: _inputDecoration('Selecione seu clube'),
-                            items: clubes
-                                .map(
-                                  (clube) => DropdownMenuItem(
-                                    value: clube,
-                                    child: Text(
-                                      clube,
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                          if (_isCreatingAccount) ...[
+                            TextField(
+                              controller: _nomeController,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: _inputDecoration('Digite seu nome'),
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _idadeController,
+                              keyboardType: TextInputType.number,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: _inputDecoration('Digite sua idade'),
+                            ),
+                            const SizedBox(height: 12),
+                            DropdownButtonFormField<String>(
+                              value: _clubeSelecionado,
+                              dropdownColor: Colors.black87,
+                              decoration: _inputDecoration(
+                                'Selecione seu clube',
+                              ),
+                              items: clubes
+                                  .map(
+                                    (clube) => DropdownMenuItem(
+                                      value: clube,
+                                      child: Text(
+                                        clube,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                _clubeSelecionado = value;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 12),
+                                  )
+                                  .toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  _clubeSelecionado = value;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                          ],
                           TextField(
                             controller: _emailController,
                             style: const TextStyle(color: Colors.white),
@@ -265,33 +325,56 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
                               ? const CircularProgressIndicator()
                               : Column(
                                   children: [
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: ElevatedButton(
-                                        style: _buttonStyle(),
-                                        onPressed: _registerEmail,
-                                        child: const Text('Registrar conta'),
+                                    if (_isCreatingAccount) ...[
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: ElevatedButton(
+                                          style: _buttonStyle(),
+                                          onPressed: _registerEmail,
+                                          child: const Text('Criar Conta'),
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: ElevatedButton(
-                                        style: _buttonStyle(),
-                                        onPressed: _loginEmail,
-                                        child: const Text('Entrar com e-mail'),
+                                      const SizedBox(height: 8),
+                                      TextButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            _isCreatingAccount = false;
+                                          });
+                                        },
+                                        child: const Text('Voltar ao login'),
                                       ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: OutlinedButton.icon(
-                                        style: _buttonStyleOutlined(),
-                                        icon: const Icon(Icons.login),
-                                        label: const Text('Entrar com Google'),
-                                        onPressed: _loginGoogle,
+                                    ] else ...[
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: ElevatedButton(
+                                          style: _buttonStyle(),
+                                          onPressed: _loginEmail,
+                                          child: const Text(
+                                            'Entrar com e-mail',
+                                          ),
+                                        ),
                                       ),
-                                    ),
+                                      const SizedBox(height: 8),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: OutlinedButton.icon(
+                                          style: _buttonStyleOutlined(),
+                                          label: const Text(
+                                            'Entrar com Google',
+                                          ),
+                                          onPressed: _loginGoogle,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      TextButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            _isCreatingAccount = true;
+                                          });
+                                        },
+                                        child: const Text('Criar nova conta'),
+                                      ),
+                                    ],
                                   ],
                                 ),
                         ],
@@ -330,10 +413,11 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
 
   ButtonStyle _buttonStyleOutlined() {
     return OutlinedButton.styleFrom(
-      side: const BorderSide(color: Colors.white),
+      backgroundColor: Colors.white,
+      side: const BorderSide(color: Color(0xFF6A1B9A)),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
       padding: const EdgeInsets.symmetric(vertical: 14),
-      foregroundColor: Colors.white,
+      foregroundColor: Color.fromARGB(255, 38, 10, 56),
     );
   }
 }
