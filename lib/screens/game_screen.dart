@@ -4,7 +4,6 @@ import 'package:bitleo/screens/name_screen.dart';
 import 'package:bitleo/services/CooldownHelper.dart';
 import 'package:bitleo/services/action_messages.dart';
 import 'package:bitleo/services/firestore_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
@@ -12,8 +11,7 @@ import 'actions_screen.dart';
 import 'profile_screen.dart';
 import 'conquistas_screen.dart';
 import '../widgets/custom_appbar.dart';
-import '../services/atributos_storage.dart';
-import '../services/conquistas_service.dart';
+import '../models/conquista.dart';
 
 class GameScreen extends StatefulWidget {
   final String nome;
@@ -79,7 +77,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   Map<String, int> cargosRecusados = {};
   List<String> conquistas = [];
+  List<String> conquistasResgatadas = [];
 
+  int totalConquistasLista = 0;
   late AnimationController _colorController;
   late Animation<Color?> colorAnimation1;
   late Animation<Color?> colorAnimation2;
@@ -178,10 +178,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       final p = results[3] as int;
       final ultimoXP = results[4] as int;
       final historico = results[5] as List<String>;
-      final conquistasSalvas = await ConquistaService.carregarConquistas();
-
+      final conquistasSalvas = await FirestoreService.carregarConquistas();
+      final getTotalConquistas =
+          await FirestoreService.conquistasDesbloqueadas();
+      final conquistasResgatadasSalvas =
+          await FirestoreService.conquistasResgatadas();
       String auxCargo = await FirestoreService.carregarCargo();
-      await ConquistaService.marcarInicioDoJogo();
+      await FirestoreService.marcarInicioDoJogo();
 
       setState(() {
         dinheiro = status['dinheiro'] ?? dinheiro;
@@ -198,6 +201,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         xpAnteriorParaPontos = ultimoXP;
         story = historico;
         dadosCarregados = true;
+        conquistasResgatadas = conquistasResgatadasSalvas;
+        totalConquistasLista = getTotalConquistas.length;
       });
 
       updateCargo();
@@ -270,6 +275,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   void adicionarConquista(String conquista) {
     _confettiController.play();
     showAnimatedDialog('🏆 Nova Conquista!', conquista);
+
+    if (!conquistas.contains(conquista)) {
+      setState(() {
+        conquistas.add(conquista);
+        totalConquistasLista++;
+      });
+    }
   }
 
   void salvarDadosStatus() {
@@ -413,10 +425,6 @@ $reqText
                                             setModalState(() {
                                               atributos[key] =
                                                   (atributos[key] ?? 0) + 1;
-                                            });
-                                            setState(() {
-                                              atributos[key] =
-                                                  (atributos[key] ?? 0) + 1;
                                               pontosDeAtributo--;
                                             });
                                           }
@@ -474,7 +482,13 @@ $reqText
                                 await FirestoreService.salvarDistribuicaoInicial(
                                   true,
                                 );
-
+                                await FirestoreService.desbloquear(
+                                  "Estrategista",
+                                );
+                                adicionarConquista("Estrategista");
+                                adicionarAoFeed(
+                                  "Nova conquista desbloqueada: Estrategista! 🎉",
+                                );
                                 setState(() {
                                   distribuiuPontosIniciais = true;
                                 });
@@ -644,11 +658,6 @@ $reqText
       story.add(texto);
     });
     await Future.delayed(const Duration(milliseconds: 100));
-    _scrollController.animateTo(
-      _scrollController.position.maxScrollExtent,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
-    );
     await FirestoreService.salvarHistorico(story);
   }
 
@@ -783,10 +792,10 @@ $reqText
       "$anoAtual: ${ActionMessageHelper.getRandomMessage(tipo)}",
     );
 
-    final conquistasAntes = await ConquistaService.conquistasDesbloqueadas();
+    final conquistasAntes = await FirestoreService.conquistasDesbloqueadas();
 
     // checagem das conquistas
-    await ConquistaService.checarDesbloqueios(
+    await FirestoreService.checarDesbloqueios(
       xp: xp,
       acoes: totalAcoesDesdeInicioTrimestre,
       oratoria: atributos['Oratória'],
@@ -796,7 +805,7 @@ $reqText
       turnosJogando: ((idade - 18) * 100).floor(),
     );
 
-    final conquistasDepois = await ConquistaService.conquistasDesbloqueadas();
+    final conquistasDepois = await FirestoreService.conquistasDesbloqueadas();
 
     for (final nome in conquistasDepois.difference(conquistasAntes)) {
       adicionarConquista(nome);
@@ -1678,88 +1687,105 @@ $reqText
     );
   }
 
+  Widget _buildIconWithBadge({
+    required IconData icon,
+    required String tooltip,
+    required int badgeCount,
+    required VoidCallback onPressed,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Stack(
+        alignment: Alignment.topRight,
+        children: [
+          IconButton(icon: Icon(icon, size: 32), onPressed: onPressed),
+          if (badgeCount > 0)
+            Positioned(
+              right: 6,
+              top: 6,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.redAccent,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  '$badgeCount',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: buildCustomAppBarWithActions(
         title: 'C. LEO - ${widget.nome}',
         actions: [
-          Tooltip(
-            message: pontosDeAtributo > 0
+          _buildIconWithBadge(
+            icon: Icons.person,
+            tooltip: pontosDeAtributo > 0
                 ? 'Você tem pontos de atributos para distribuir!'
                 : 'Ver perfil',
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.person),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      PageRouteBuilder(
-                        transitionDuration: const Duration(milliseconds: 500),
-                        pageBuilder: (_, __, ___) => const ProfileScreen(),
-                        transitionsBuilder: (_, animation, __, child) {
-                          const curve = Curves.easeInOut;
-                          final tween = Tween(
-                            begin: 0.0,
-                            end: 1.0,
-                          ).chain(CurveTween(curve: curve));
-                          return FadeTransition(
-                            opacity: animation.drive(tween),
-                            child: child,
-                          );
-                        },
-                      ),
-                    ).then((_) async {
-                      final novosAtributos = await FirestoreService.carregar();
-                      final novosPontos =
-                          await FirestoreService.carregarPontos();
-                      setState(() {
-                        atributos = novosAtributos;
-                        pontosDeAtributo = novosPontos;
-                      });
-                      updateCargo();
-                    });
-                  },
-                ),
-                if (pontosDeAtributo > 0)
-                  Positioned(
-                    right: 6,
-                    top: 6,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Colors.redAccent,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        '$pontosDeAtributo',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.emoji_events),
+            badgeCount: pontosDeAtributo,
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => ConquistasScreen()),
-              ).then((resultado) async {
-                if (resultado == true) {
-                  final novosPontos = await FirestoreService.carregarPontos();
-                  setState(() {
-                    pontosDeAtributo = novosPontos;
-                  });
-                }
+                PageRouteBuilder(
+                  transitionDuration: const Duration(milliseconds: 500),
+                  pageBuilder: (_, __, ___) => const ProfileScreen(),
+                  transitionsBuilder: (_, animation, __, child) {
+                    const curve = Curves.easeInOut;
+                    final tween = Tween(
+                      begin: 0.0,
+                      end: 1.0,
+                    ).chain(CurveTween(curve: curve));
+                    return FadeTransition(
+                      opacity: animation.drive(tween),
+                      child: child,
+                    );
+                  },
+                ),
+              ).then((_) async {
+                final novosAtributos = await FirestoreService.carregar();
+                final novosPontos = await FirestoreService.carregarPontos();
+                setState(() {
+                  atributos = novosAtributos;
+                  pontosDeAtributo = novosPontos;
+                });
+                updateCargo();
               });
+            },
+          ),
+          _buildIconWithBadge(
+            icon: Icons.emoji_events,
+            tooltip: 'Conquistas',
+            badgeCount: (totalConquistasLista - conquistasResgatadas.length),
+            onPressed: () async {
+              final resultado = await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => ConquistasScreen()),
+              );
+              if (resultado == true) {
+                final novosPontos = await FirestoreService.carregarPontos();
+                final conquistasAtualizadas =
+                    await FirestoreService.conquistasDesbloqueadas();
+                final conquistasResgatadasAtualizadas =
+                    await FirestoreService.conquistasResgatadas();
+                setState(() {
+                  pontosDeAtributo = novosPontos;
+                  totalConquistasLista = conquistasAtualizadas.length;
+                  conquistasResgatadas = conquistasResgatadasAtualizadas;
+                });
+              }
             },
           ),
           OutlinedButton.icon(
@@ -1771,8 +1797,13 @@ $reqText
                 (route) => false,
               );
             },
+            icon: SizedBox(
+              width: 28,
+              height: 28,
+              child: Image.asset('assets/images/out.png'),
+            ),
             label: const Text(
-              '-> Sair',
+              'Sair',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,

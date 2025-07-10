@@ -1,7 +1,7 @@
 import 'dart:ui';
+import 'package:bitleo/services/firestore_service.dart';
 import 'package:flutter/material.dart';
 import '../widgets/custom_appbar.dart';
-import '../services/conquistas_service.dart';
 
 class ActionsScreen extends StatelessWidget {
   final Function(Map<String, dynamic>, String) onActionSelected;
@@ -18,7 +18,7 @@ class ActionsScreen extends StatelessWidget {
   });
 
   void showInfoDialog(BuildContext context, String title, String description) {
-    ConquistaService.marcarTelaVisitada('actions');
+    FirestoreService.marcarTelaVisitada('actions');
     showDialog(
       context: context,
       builder: (context) {

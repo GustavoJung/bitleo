@@ -1,30 +1,7 @@
 import 'package:bitleo/services/atributos_storage.dart';
 import 'package:flutter/material.dart';
-import '../services/conquistas_service.dart';
-
-class Conquista {
-  final String titulo;
-  final String descricao;
-  bool desbloqueada;
-
-  Conquista({
-    required this.titulo,
-    required this.descricao,
-    this.desbloqueada = false,
-  });
-
-  Map<String, dynamic> toMap() => {
-    'titulo': titulo,
-    'descricao': descricao,
-    'desbloqueada': desbloqueada,
-  };
-
-  static Conquista fromMap(Map<String, dynamic> map) => Conquista(
-    titulo: map['titulo'],
-    descricao: map['descricao'],
-    desbloqueada: map['desbloqueada'],
-  );
-}
+import '../services/firestore_service.dart';
+import '../models/conquista.dart';
 
 class ConquistasScreen extends StatefulWidget {
   const ConquistasScreen({super.key});
@@ -71,30 +48,40 @@ class _ConquistasScreenState extends State<ConquistasScreen> {
   @override
   void initState() {
     super.initState();
-    ConquistaService.marcarTelaVisitada('conquistas');
+    FirestoreService.marcarTelaVisitada('conquistas');
     _carregarConquistas();
   }
 
   Future<void> _carregarConquistas() async {
-    final estados = await ConquistaService.listarTodas(
-      conquistas.map((c) => c.titulo).toList(),
-    );
+    final desbloqueadas = await FirestoreService.conquistasDesbloqueadas();
+    final resgatadas = await FirestoreService.conquistasResgatadas();
+
     setState(() {
       for (var c in conquistas) {
-        c.desbloqueada = estados[c.titulo] ?? false;
+        c.desbloqueada = desbloqueadas.contains(c.titulo);
+        c.podeResgatar = c.desbloqueada && !resgatadas.contains(c.titulo);
       }
     });
   }
 
   Future<bool> _verificarResgate(String titulo) async {
-    final resgatadas = await ConquistaService.conquistasResgatadas();
+    final resgatadas = await FirestoreService.conquistasResgatadas();
     return resgatadas.contains(titulo);
   }
 
   Future<void> _resgatarRecompensa(String titulo) async {
     int pontosAtuais = await AtributosStorageFirestore.carregarPontos();
     await AtributosStorageFirestore.salvarPontos(pontosAtuais + 1);
-    await ConquistaService.registrarResgate(titulo);
+    await FirestoreService.registrarResgateConquista(titulo);
+
+    setState(() {
+      for (var c in conquistas) {
+        if (c.titulo == titulo) {
+          c.podeResgatar = false;
+          break;
+        }
+      }
+    });
   }
 
   void _mostrarDetalhes(Conquista conquista) async {
@@ -252,9 +239,7 @@ class ConquistaCard extends StatelessWidget {
       width: 220,
       height: 180,
       decoration: BoxDecoration(
-        color: desbloqueada
-            ? const Color(0xFF4A148C) // Roxo forte
-            : const Color(0xFF2C2C2C), // Cinza escuro
+        color: desbloqueada ? const Color(0xFF4A148C) : const Color(0xFF2C2C2C),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: desbloqueada ? Colors.amber.withOpacity(0.6) : Colors.white24,
@@ -306,6 +291,18 @@ class ConquistaCard extends StatelessWidget {
             const Align(
               alignment: Alignment.topRight,
               child: Icon(Icons.lock, color: Colors.grey, size: 20),
+            ),
+          if (conquista.podeResgatar)
+            Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: Image.asset('assets/images/Recompensa.png'),
+                ),
+              ),
             ),
         ],
       ),

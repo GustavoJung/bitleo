@@ -1,7 +1,6 @@
 import 'package:bitleo/services/clube_storage.dart';
-import 'package:bitleo/services/conquistas_service.dart';
+import 'package:bitleo/services/firestore_service.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/custom_appbar.dart';
 import '../services/atributos_storage.dart';
 
@@ -51,7 +50,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     carregarClube();
     carregarDados();
-    ConquistaService.marcarTelaVisitada('profile');
+    FirestoreService.marcarTelaVisitada('profile');
   }
 
   Future<void> carregarClube() async {
