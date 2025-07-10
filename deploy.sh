@@ -5,7 +5,7 @@ REPO_NAME="bitleo"
 OUTPUT_DIR="docs"
 
 echo "👉 Fazendo build do Flutter Web com base href /$REPO_NAME/..."
-flutter build web --base-href='/'"$REPO_NAME"'/' 
+flutter build web
 
 echo "🗂️ Criando pasta $OUTPUT_DIR se não existir..."
 mkdir -p $OUTPUT_DIR
