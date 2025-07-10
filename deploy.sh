@@ -20,6 +20,6 @@ rm -rf build
 echo "📤 Commitando alterações..."
 git add .
 git commit -m "Deploy para GitHub Pages via docs"
-git push origin web_dev
+git push origin gh-pages
 
 echo "🚀 Deploy atualizado na pasta /docs! Só ir nas configs do GitHub Pages e garantir que está usando ela 🎯"
