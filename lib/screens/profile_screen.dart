@@ -16,7 +16,10 @@ Map<String, Map<String, String>> clubesInfo = {
 };
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final String userCargo;
+  final String nome;
+
+  const ProfileScreen({super.key, required this.userCargo, required this.nome});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -42,7 +45,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int saude = 0;
   int xp = 0;
   double idade = 18;
-  String cargo = 'Pré-LEO';
   String clubeAtual = 'Clube não informado';
 
   @override
@@ -70,7 +72,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final status = await AtributosStorageFirestore.carregarStatus();
     final a = await AtributosStorageFirestore.carregar();
     final p = await AtributosStorageFirestore.carregarPontos();
-    final novoCargo = await AtributosStorageFirestore.carregarCargo();
 
     setState(() {
       atributos = a;
@@ -81,7 +82,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       saude = status['saude'] ?? 0;
       xp = status['xp'] ?? 0;
       idade = (status['idade'] as num?)?.toDouble() ?? 18.0;
-      cargo = novoCargo;
     });
   }
 
@@ -186,7 +186,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          cargo,
+                          widget.nome,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 28,
@@ -194,7 +194,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                         Text(
-                          '${idade.toInt()} anos',
+                          widget.userCargo,
                           style: const TextStyle(color: Colors.white70),
                         ),
                         Text(

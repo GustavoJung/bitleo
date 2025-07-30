@@ -25,10 +25,10 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   List<String> story = [];
 
-  int dinheiro = 100;
+  int dinheiro = 30;
   int inteligencia = 5;
-  int felicidade = 50;
-  int saude = 50;
+  int felicidade = 70;
+  int saude = 70;
   double idade = 18;
   int xp = 0;
   late int anoAtual;
@@ -1724,11 +1724,16 @@ $reqText
     );
   }
 
+  Future<String> getUserCargo() async {
+    String userCargo = await FirestoreService.carregarCargo();
+    return userCargo;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: buildCustomAppBarWithActions(
-        title: 'C. LEO - ${widget.nome}',
+        title: '${cargo ?? 'Carregando...'} ${widget.nome}',
         actions: [
           _buildIconWithBadge(
             icon: Icons.person,
@@ -1741,7 +1746,8 @@ $reqText
                 context,
                 PageRouteBuilder(
                   transitionDuration: const Duration(milliseconds: 500),
-                  pageBuilder: (_, __, ___) => const ProfileScreen(),
+                  pageBuilder: (_, __, ___) =>
+                      ProfileScreen(userCargo: cargo, nome: widget.nome),
                   transitionsBuilder: (_, animation, __, child) {
                     const curve = Curves.easeInOut;
                     final tween = Tween(

@@ -205,7 +205,8 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
           mensagem = 'A senha é muito fraca.';
           break;
         default:
-          mensagem = e.message ?? defaultMessage;
+          mensagem =
+              "Falha ao fazer login. Verifique suas credenciais ou contato um administrador.";
       }
     }
 
@@ -328,17 +329,6 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
                                           child: const Text(
                                             'Entrar com e-mail',
                                           ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      SizedBox(
-                                        width: double.infinity,
-                                        child: OutlinedButton.icon(
-                                          style: _buttonStyleOutlined(),
-                                          label: const Text(
-                                            'Entrar com Google',
-                                          ),
-                                          onPressed: _loginGoogle,
                                         ),
                                       ),
                                       const SizedBox(height: 8),
