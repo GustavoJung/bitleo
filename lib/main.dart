@@ -1,6 +1,5 @@
 import 'package:bitleo/screens/name_screen.dart';
 import 'package:flutter/material.dart';
-import 'screens/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
@@ -19,7 +18,7 @@ class MyApp extends StatelessWidget {
       title: 'Vida de LEO Clube',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        fontFamily: 'Poppins',
+        fontFamily: 'PressStart2P',
         brightness: Brightness.dark,
         scaffoldBackgroundColor: Color(0xFF121212),
         primaryColor: Color(0xFF6A1B9A),

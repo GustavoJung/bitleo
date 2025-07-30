@@ -11,7 +11,6 @@ import 'actions_screen.dart';
 import 'profile_screen.dart';
 import 'conquistas_screen.dart';
 import '../widgets/custom_appbar.dart';
-import '../models/conquista.dart';
 
 class GameScreen extends StatefulWidget {
   final String nome;

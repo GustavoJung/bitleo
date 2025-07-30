@@ -25,11 +25,21 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
 
   final AuthService _authService = AuthService();
   final FirestoreService _firestoreService = FirestoreService();
+  var _animationController;
+  var _logoAnimation;
 
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..forward();
 
+    _logoAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutBack,
+    );
     _checkLoggedIn();
   }
 
@@ -178,6 +188,24 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
     );
   }
 
+  void _showMessageSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
   void _showFirebaseError(Object e, String defaultMessage) {
     String mensagem = defaultMessage;
 
@@ -216,35 +244,25 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: AnimatedBackground(
-        behaviour: RandomParticleBehaviour(
-          options: ParticleOptions(
-            baseColor: Colors.white24,
-            spawnOpacity: 0.0,
-            opacityChangeRate: 0.25,
-            minOpacity: 0.1,
-            maxOpacity: 0.4,
-            spawnMinSpeed: 30.0,
-            spawnMaxSpeed: 70.0,
-            spawnMinRadius: 1.0,
-            spawnMaxRadius: 4.0,
-            particleCount: 40,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF6A1B9A), Color(0xFF121212)],
           ),
         ),
-        vsync: this,
-        child: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF6A1B9A), Color(0xFF121212)],
-            ),
+        child: AnimatedBackground(
+          behaviour: RacingLinesBehaviour(
+            direction: LineDirection.Ttb,
+            numLines: 40,
           ),
+          vsync: this,
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 400),
+                constraints: const BoxConstraints(maxWidth: 500),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(28),
                   child: BackdropFilter(
@@ -261,16 +279,19 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Image.asset(
-                            'assets/images/Logo_rgb_Leo_2C.png',
-                            width: 140,
+                          ScaleTransition(
+                            scale: _logoAnimation,
+                            child: Image.asset(
+                              'assets/images/Logo_rgb_Leo_2C.png',
+                              width: 140,
+                            ),
                           ),
                           const SizedBox(height: 30),
                           const Text(
-                            'Simulador de Vida de LEO Clube',
+                            'Pronto(a) para liderar e servir no \nMundo do LEO Clube',
                             style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 22,
+                              fontFamily: 'PressStart2P',
+                              fontSize: 28,
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                             ),
@@ -307,18 +328,68 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
                                         width: double.infinity,
                                         child: ElevatedButton(
                                           style: _buttonStyle(),
+
                                           onPressed: _registerEmail,
                                           child: const Text('Criar Conta'),
                                         ),
                                       ),
                                       const SizedBox(height: 8),
                                       TextButton(
+                                        style: ButtonStyle(
+                                          backgroundColor:
+                                              MaterialStateProperty.resolveWith<
+                                                Color
+                                              >((Set<MaterialState> states) {
+                                                if (states.contains(
+                                                  MaterialState.hovered,
+                                                )) {
+                                                  return const Color.fromARGB(
+                                                    60,
+                                                    103,
+                                                    51,
+                                                    114,
+                                                  ); // Fundo no hover
+                                                }
+                                                return Colors
+                                                    .transparent; // Fundo padrão
+                                              }),
+                                          foregroundColor:
+                                              MaterialStateProperty.resolveWith<
+                                                Color
+                                              >((Set<MaterialState> states) {
+                                                if (states.contains(
+                                                  MaterialState.hovered,
+                                                )) {
+                                                  return Colors
+                                                      .white; // Texto no hover
+                                                }
+                                                return Colors
+                                                    .white; // Texto padrão
+                                              }),
+                                          padding: MaterialStateProperty.all(
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 12,
+                                            ),
+                                          ),
+                                          shape: MaterialStateProperty.all(
+                                            RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                        ),
                                         onPressed: () {
                                           setState(() {
                                             _isCreatingAccount = false;
                                           });
                                         },
-                                        child: const Text('Voltar ao login'),
+                                        child: const Text(
+                                          'Voltar ao login',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                       ),
                                     ] else ...[
                                       SizedBox(
@@ -331,14 +402,146 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(height: 8),
+
+                                      const SizedBox(height: 12),
+
                                       TextButton(
+                                        style: ButtonStyle(
+                                          backgroundColor:
+                                              MaterialStateProperty.resolveWith<
+                                                Color
+                                              >((Set<MaterialState> states) {
+                                                if (states.contains(
+                                                  MaterialState.hovered,
+                                                )) {
+                                                  return const Color.fromARGB(
+                                                    60,
+                                                    103,
+                                                    51,
+                                                    114,
+                                                  ); // Fundo no hover
+                                                }
+                                                return Colors
+                                                    .transparent; // Fundo padrão
+                                              }),
+                                          foregroundColor:
+                                              MaterialStateProperty.resolveWith<
+                                                Color
+                                              >((Set<MaterialState> states) {
+                                                if (states.contains(
+                                                  MaterialState.hovered,
+                                                )) {
+                                                  return Colors
+                                                      .white; // Texto no hover
+                                                }
+                                                return Colors
+                                                    .white; // Texto padrão
+                                              }),
+                                          padding: MaterialStateProperty.all(
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 12,
+                                            ),
+                                          ),
+                                          shape: MaterialStateProperty.all(
+                                            RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                        ),
                                         onPressed: () {
                                           setState(() {
                                             _isCreatingAccount = true;
                                           });
                                         },
                                         child: const Text('Criar nova conta'),
+                                      ),
+                                      // adicione dentro da função build, logo abaixo do botão "Entrar com e-mail":
+                                      TextButton(
+                                        style: ButtonStyle(
+                                          backgroundColor:
+                                              MaterialStateProperty.resolveWith<
+                                                Color
+                                              >((Set<MaterialState> states) {
+                                                if (states.contains(
+                                                  MaterialState.hovered,
+                                                )) {
+                                                  return const Color.fromARGB(
+                                                    60,
+                                                    103,
+                                                    51,
+                                                    114,
+                                                  ); // Fundo no hover
+                                                }
+                                                return Colors
+                                                    .transparent; // Fundo padrão
+                                              }),
+                                          foregroundColor:
+                                              MaterialStateProperty.resolveWith<
+                                                Color
+                                              >((Set<MaterialState> states) {
+                                                if (states.contains(
+                                                  MaterialState.hovered,
+                                                )) {
+                                                  return Colors
+                                                      .white; // Texto no hover
+                                                }
+                                                return Colors
+                                                    .white; // Texto padrão
+                                              }),
+                                          padding: MaterialStateProperty.all(
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 12,
+                                            ),
+                                          ),
+                                          shape: MaterialStateProperty.all(
+                                            RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                        ),
+                                        onPressed: () async {
+                                          final email = _emailController.text
+                                              .trim();
+                                          if (email.isEmpty) {
+                                            _showMessage(
+                                              'Informe um e-mail para redefinir a senha.',
+                                            );
+                                            return;
+                                          }
+
+                                          try {
+                                            await FirebaseAuth.instance
+                                                .sendPasswordResetEmail(
+                                                  email: email,
+                                                );
+                                            _showMessageSuccess(
+                                              'E-mail de redefinição enviado com sucesso.',
+                                            );
+
+                                            // Limpa os campos e volta ao modo login
+                                            setState(() {
+                                              _isCreatingAccount = false;
+                                              _emailController.clear();
+                                              _senhaController.clear();
+                                              _nomeController.clear();
+                                            });
+                                          } catch (e) {
+                                            _showFirebaseError(
+                                              e,
+                                              'Erro ao enviar e-mail de redefinição.',
+                                            );
+                                          }
+                                        },
+                                        child: const Text(
+                                          'Esqueci minha senha',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                       ),
                                     ],
                                   ],
@@ -359,7 +562,10 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: Colors.white54, fontFamily: 'Poppins'),
+      hintStyle: const TextStyle(
+        color: Colors.white54,
+        fontFamily: 'PressStart2P',
+      ),
       filled: true,
       fillColor: Colors.white.withOpacity(0.1),
       border: OutlineInputBorder(
@@ -374,16 +580,7 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
       backgroundColor: const Color(0xFF6A1B9A),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
       padding: const EdgeInsets.symmetric(vertical: 14),
-    );
-  }
-
-  ButtonStyle _buttonStyleOutlined() {
-    return OutlinedButton.styleFrom(
-      backgroundColor: Colors.white,
-      side: const BorderSide(color: Color(0xFF6A1B9A)),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      foregroundColor: Color.fromARGB(255, 38, 10, 56),
+      shadowColor: Colors.white,
     );
   }
 }

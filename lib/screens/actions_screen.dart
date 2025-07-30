@@ -151,11 +151,13 @@ class ActionsScreen extends StatelessWidget {
   ) {
     // Pré-requisitos fixos
     if ((action['label'] == 'Trabalhar' || action['label'] == 'Campanha') &&
-        status['saude']! < 30)
+        status['saude']! < 30) {
       return false;
+    }
     if ((action['label'] == 'Campanha' || action['label'] == 'Estudar') &&
-        status['felicidade']! < 20)
+        status['felicidade']! < 20) {
       return false;
+    }
     if (action['label'] == 'Estudar' && status['saude']! < 15) return false;
 
     // Pré-requisitos dinâmicos
