@@ -19,6 +19,7 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
   final _nomeController = TextEditingController();
   final _emailController = TextEditingController();
   final _senhaController = TextEditingController();
+  final _clubeController = TextEditingController();
 
   bool _loading = false;
   bool _isCreatingAccount = false;
@@ -43,6 +44,13 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
     _checkLoggedIn();
   }
 
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _logoAnimation.dispose(); // isso é essencial
+    super.dispose();
+  }
+
   Future<void> _checkLoggedIn() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -54,9 +62,11 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
     final nome = _nomeController.text.trim();
     final email = _emailController.text.trim();
     final senha = _senhaController.text.trim();
+    final clube = _clubeController.text.trim();
+
     final emailRegex = RegExp(r"^[^@]+@[^@]+\.[^@]+$");
 
-    if (nome.isEmpty || email.isEmpty || senha.isEmpty) {
+    if (nome.isEmpty || email.isEmpty || senha.isEmpty || clube.isEmpty) {
       _showMessage('Preencha todos os campos!');
       return;
     }
@@ -77,6 +87,7 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
         data: {
           'nome': nome,
           'email': email,
+          'clube': clube,
           'criadoEm': FieldValue.serverTimestamp(),
         },
       );
@@ -122,36 +133,6 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
       _goToSplash();
     } catch (e) {
       _showFirebaseError(e, 'Erro ao fazer login.');
-    } finally {
-      setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _loginGoogle() async {
-    setState(() => _loading = true);
-    try {
-      final userCredential = await _authService.signInWithGoogle();
-      final uid = userCredential.user!.uid;
-      final nome = userCredential.user!.displayName ?? '';
-
-      final doc = await _firestoreService.getUserDocument(uid);
-
-      if (!doc.exists) {
-        await _firestoreService.createUserDocument(
-          uid: uid,
-          data: {
-            'nome': nome,
-            'email': userCredential.user!.email ?? '',
-            'criadoEm': FieldValue.serverTimestamp(),
-          },
-        );
-      } else {
-        await _firestoreService.updateUserName(uid, nome);
-      }
-
-      _goToSplash();
-    } catch (e) {
-      _showFirebaseError(e, 'Erro ao fazer login com Google.');
     } finally {
       setState(() => _loading = false);
     }
@@ -305,6 +286,12 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
                               decoration: _inputDecoration('Digite seu nome'),
                             ),
                             const SizedBox(height: 12),
+                            TextField(
+                              controller: _clubeController,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: _inputDecoration('Digite seu clube'),
+                            ),
+                            const SizedBox(height: 12),
                           ],
                           TextField(
                             controller: _emailController,
@@ -337,11 +324,11 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
                                       TextButton(
                                         style: ButtonStyle(
                                           backgroundColor:
-                                              MaterialStateProperty.resolveWith<
+                                              WidgetStateProperty.resolveWith<
                                                 Color
-                                              >((Set<MaterialState> states) {
+                                              >((Set<WidgetState> states) {
                                                 if (states.contains(
-                                                  MaterialState.hovered,
+                                                  WidgetState.hovered,
                                                 )) {
                                                   return const Color.fromARGB(
                                                     60,
@@ -354,11 +341,11 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
                                                     .transparent; // Fundo padrão
                                               }),
                                           foregroundColor:
-                                              MaterialStateProperty.resolveWith<
+                                              WidgetStateProperty.resolveWith<
                                                 Color
-                                              >((Set<MaterialState> states) {
+                                              >((Set<WidgetState> states) {
                                                 if (states.contains(
-                                                  MaterialState.hovered,
+                                                  WidgetState.hovered,
                                                 )) {
                                                   return Colors
                                                       .white; // Texto no hover
@@ -366,13 +353,13 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
                                                 return Colors
                                                     .white; // Texto padrão
                                               }),
-                                          padding: MaterialStateProperty.all(
+                                          padding: WidgetStateProperty.all(
                                             const EdgeInsets.symmetric(
                                               horizontal: 16,
                                               vertical: 12,
                                             ),
                                           ),
-                                          shape: MaterialStateProperty.all(
+                                          shape: WidgetStateProperty.all(
                                             RoundedRectangleBorder(
                                               borderRadius:
                                                   BorderRadius.circular(8),
@@ -386,9 +373,7 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
                                         },
                                         child: const Text(
                                           'Voltar ao login',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                          ),
+                                          style: TextStyle(color: Colors.white),
                                         ),
                                       ),
                                     ] else ...[
@@ -408,11 +393,11 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
                                       TextButton(
                                         style: ButtonStyle(
                                           backgroundColor:
-                                              MaterialStateProperty.resolveWith<
+                                              WidgetStateProperty.resolveWith<
                                                 Color
-                                              >((Set<MaterialState> states) {
+                                              >((Set<WidgetState> states) {
                                                 if (states.contains(
-                                                  MaterialState.hovered,
+                                                  WidgetState.hovered,
                                                 )) {
                                                   return const Color.fromARGB(
                                                     60,
@@ -425,11 +410,11 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
                                                     .transparent; // Fundo padrão
                                               }),
                                           foregroundColor:
-                                              MaterialStateProperty.resolveWith<
+                                              WidgetStateProperty.resolveWith<
                                                 Color
-                                              >((Set<MaterialState> states) {
+                                              >((Set<WidgetState> states) {
                                                 if (states.contains(
-                                                  MaterialState.hovered,
+                                                  WidgetState.hovered,
                                                 )) {
                                                   return Colors
                                                       .white; // Texto no hover
@@ -437,13 +422,13 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
                                                 return Colors
                                                     .white; // Texto padrão
                                               }),
-                                          padding: MaterialStateProperty.all(
+                                          padding: WidgetStateProperty.all(
                                             const EdgeInsets.symmetric(
                                               horizontal: 16,
                                               vertical: 12,
                                             ),
                                           ),
-                                          shape: MaterialStateProperty.all(
+                                          shape: WidgetStateProperty.all(
                                             RoundedRectangleBorder(
                                               borderRadius:
                                                   BorderRadius.circular(8),
@@ -461,11 +446,11 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
                                       TextButton(
                                         style: ButtonStyle(
                                           backgroundColor:
-                                              MaterialStateProperty.resolveWith<
+                                              WidgetStateProperty.resolveWith<
                                                 Color
-                                              >((Set<MaterialState> states) {
+                                              >((Set<WidgetState> states) {
                                                 if (states.contains(
-                                                  MaterialState.hovered,
+                                                  WidgetState.hovered,
                                                 )) {
                                                   return const Color.fromARGB(
                                                     60,
@@ -478,11 +463,11 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
                                                     .transparent; // Fundo padrão
                                               }),
                                           foregroundColor:
-                                              MaterialStateProperty.resolveWith<
+                                              WidgetStateProperty.resolveWith<
                                                 Color
-                                              >((Set<MaterialState> states) {
+                                              >((Set<WidgetState> states) {
                                                 if (states.contains(
-                                                  MaterialState.hovered,
+                                                  WidgetState.hovered,
                                                 )) {
                                                   return Colors
                                                       .white; // Texto no hover
@@ -490,13 +475,13 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
                                                 return Colors
                                                     .white; // Texto padrão
                                               }),
-                                          padding: MaterialStateProperty.all(
+                                          padding: WidgetStateProperty.all(
                                             const EdgeInsets.symmetric(
                                               horizontal: 16,
                                               vertical: 12,
                                             ),
                                           ),
-                                          shape: MaterialStateProperty.all(
+                                          shape: WidgetStateProperty.all(
                                             RoundedRectangleBorder(
                                               borderRadius:
                                                   BorderRadius.circular(8),
@@ -538,9 +523,7 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
                                         },
                                         child: const Text(
                                           'Esqueci minha senha',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                          ),
+                                          style: TextStyle(color: Colors.white),
                                         ),
                                       ),
                                     ],

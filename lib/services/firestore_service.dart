@@ -181,9 +181,9 @@ class FirestoreService {
     await _doc.set({'nomeClube': nomeClube}, SetOptions(merge: true));
   }
 
-  static Future<String?> carregarNomeClube() async {
+  static Future<String?> getNomeClube() async {
     final doc = await _doc.get();
-    return doc.data()?['nomeClube'];
+    return doc.data()?['clube'] as String?;
   }
 
   static Future<void> registrarResgateConquista(String titulo) async {

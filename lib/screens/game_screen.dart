@@ -64,6 +64,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     4: {},
   };
   String cargo = 'Pré-LEO';
+  String clube = "";
   String? ultimoCargoOferecido;
   String regiao = 'Região Alpha';
   String distrito = 'Distrito Z';
@@ -79,6 +80,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   List<String> conquistasResgatadas = [];
 
   int totalConquistasLista = 0;
+  Set<String> animatingStatus = {};
   late AnimationController _colorController;
   late Animation<Color?> colorAnimation1;
   late Animation<Color?> colorAnimation2;
@@ -184,6 +186,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           await FirestoreService.conquistasResgatadas();
       String auxCargo = await FirestoreService.carregarCargo();
       await FirestoreService.marcarInicioDoJogo();
+      final loadClube = await FirestoreService.getNomeClube();
 
       setState(() {
         dinheiro = status['dinheiro'] ?? dinheiro;
@@ -202,6 +205,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         dadosCarregados = true;
         conquistasResgatadas = conquistasResgatadasSalvas;
         totalConquistasLista = getTotalConquistas.length;
+        clube = loadClube!;
       });
 
       updateCargo();
@@ -681,7 +685,7 @@ $reqText
                 "Tente variar suas ações!",
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontFamily: 'Poppins',
+                  fontFamily: 'PressStart2P',
                   color: Colors.white,
                 ),
               ),
@@ -821,9 +825,14 @@ $reqText
     });
   }
 
-  void triggerStatusAnim(String status) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    statusControllers[status]?.forward(from: 0);
+  void triggerStatusAnim(String statusKey) {
+    animatingStatus.add(statusKey);
+    setState(() {});
+
+    Future.delayed(const Duration(milliseconds: 600), () {
+      animatingStatus.remove(statusKey);
+      setState(() {});
+    });
   }
 
   void checkConsequences() {
@@ -1519,65 +1528,188 @@ $reqText
   }
 
   Widget buildStatusBar() {
-    final List<Map<String, dynamic>> statusItems = [
-      {
-        'icon': Icons.attach_money,
-        'label': 'Dinheiro',
-        'value': dinheiro.toString(),
-        'key': 'dinheiro',
-      },
-      {
-        'icon': Icons.school,
-        'label': 'Inteligência',
-        'value': inteligencia.toString(),
-        'key': 'inteligencia',
-      },
-      {
-        'icon': Icons.favorite,
-        'label': 'Saúde',
-        'value': saude.toString(),
-        'key': 'saude',
-      },
-      {
-        'icon': Icons.emoji_emotions,
-        'label': 'Felicidade',
-        'value': felicidade.toString(),
-        'key': 'felicidade',
-      },
-      {'icon': Icons.star, 'label': 'XP', 'value': xp.toString(), 'key': 'xp'},
-      {
-        'icon': Icons.fitness_center,
-        'label': 'Atributos',
-        'value': '$pontosDeAtributo',
-        'key': 'atributos',
-      },
-    ];
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 12,
+        runSpacing: 12,
+        children: [
+          Tooltip(
+            message: dinheiro.toString(),
+            child: buildStatusBarItem(
+              keyName: 'dinheiro',
+              label: 'Dinheiro',
+              color: Colors.green,
+              icon: const Icon(
+                Icons.attach_money,
+                size: 22,
+                color: Colors.green,
+              ),
+              value: dinheiro,
+              maxValue: 100,
+            ),
+          ),
+          Tooltip(
+            message: inteligencia.toString(),
+            child: buildStatusBarItem(
+              keyName: 'inteligencia',
+              label: 'Inteligência',
+              color: Colors.blue,
+              icon: const Icon(Icons.school, size: 22, color: Colors.blue),
+              value: inteligencia,
+              maxValue: 100,
+            ),
+          ),
+          Tooltip(
+            message: saude.toString(),
+            child: buildStatusBarItem(
+              keyName: 'saude',
+              label: 'Saúde',
+              color: Colors.red,
+              icon: const Icon(Icons.favorite, size: 22, color: Colors.red),
+              value: saude,
+              maxValue: 100,
+            ),
+          ),
+          Tooltip(
+            message: felicidade.toString(),
+            child: buildStatusBarItem(
+              keyName: 'felicidade',
+              label: 'Felicidade',
+              color: Colors.amber,
+              icon: const Text('😊', style: TextStyle(fontSize: 22)),
+              value: felicidade,
+              maxValue: 100,
+            ),
+          ),
+          Tooltip(
+            message: xp.toString(),
+            child: buildStatusBarItem(
+              keyName: 'xp',
+              label: 'XP',
+              color: Colors.purple,
+              icon: const Icon(Icons.star, size: 22, color: Colors.purple),
+              value: xp,
+              maxValue: 50,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: statusItems.map((item) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: SizedBox(
-              width: 90, // <-- define largura igual para todos
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+  Widget _buildBadgeItem(String label, int value, Color color, Widget icon) {
+    return Container(
+      width: 100,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(width: 28, height: 28, child: Center(child: icon)),
+          const SizedBox(height: 4),
+          Text(
+            '$value',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildStatusBarItem({
+    required String keyName,
+    required String label,
+    required Color color,
+    required Widget icon,
+    int? value,
+    int? maxValue,
+    String? labelText,
+  }) {
+    final hasBar = maxValue != null && value != null;
+    final percentage = hasBar ? (value! / maxValue!).clamp(0.0, 1.0) : 0.0;
+    final isAnimating = animatingStatus.contains(keyName);
+
+    return AnimatedScale(
+      scale: isAnimating ? 1.15 : 1.0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutBack,
+      child: Container(
+        width: 140,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.15)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.4),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(width: 32, height: 32, child: Center(child: icon)),
+            const SizedBox(height: 8),
+            if (hasBar)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: percentage,
+                  minHeight: 8,
+                  backgroundColor: Colors.white.withOpacity(0.1),
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
                 ),
-                child: statusIconWithLabel(
-                  item['icon'] as IconData,
-                  item['value'] as String,
-                  item['label'] as String,
-                  item['key'] as String,
+              )
+            else if (labelText != null)
+              Text(
+                labelText,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
+              )
+            else
+              Text(
+                '${value ?? 0}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
                 ),
               ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          );
-        }).toList(),
+          ],
+        ),
       ),
     );
   }
@@ -1626,20 +1758,41 @@ $reqText
 
   Widget buildObjetivoWidget() {
     final info = getProximoCargoInfo();
+    final borderStyle = BoxDecoration(
+      color: Colors.white.withOpacity(0.05),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: Colors.white.withOpacity(0.1)),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.3),
+          blurRadius: 6,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    );
+
     if (info == null) {
-      return Padding(
-        padding: const EdgeInsets.all(16),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
-          ),
-          child: const Text(
-            '🎉 Você já atingiu o cargo máximo!',
-            style: TextStyle(color: Colors.white, fontSize: 16),
-          ),
+      return Container(
+        width: 250,
+        padding: const EdgeInsets.all(12),
+        decoration: borderStyle,
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '🎯 Objetivo Atual:',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              'Você já atingiu o cargo máximo!',
+              style: TextStyle(color: Colors.white70, fontSize: 12),
+            ),
+          ],
         ),
       );
     }
@@ -1648,40 +1801,34 @@ $reqText
     final xpNecessario = info['xp'] as int;
     final requisitos = info['requisitos'] as Map<String, int>;
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '🎯 Objetivo Atual: $nome',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+    return Container(
+      width: 250,
+      padding: const EdgeInsets.all(12),
+      decoration: borderStyle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Objetivo Atual: $nome',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 8),
-            Text(
-              'XP necessário: $xpNecessario (atual: $xp)',
-              style: const TextStyle(color: Colors.white70),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'XP necessário: $xpNecessario (atual: $xp)',
+            style: const TextStyle(color: Colors.white70, fontSize: 14),
+          ),
+          const SizedBox(height: 4),
+          ...requisitos.entries.map(
+            (e) => Text(
+              '${e.key}: ${atributos[e.key] ?? 0}/${e.value}',
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
             ),
-            const SizedBox(height: 8),
-            ...requisitos.entries.map(
-              (e) => Text(
-                '${e.key}: ${atributos[e.key] ?? 0}/${e.value}',
-                style: const TextStyle(color: Colors.white70),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1745,14 +1892,16 @@ $reqText
                 context,
                 PageRouteBuilder(
                   transitionDuration: const Duration(milliseconds: 500),
-                  pageBuilder: (_, __, ___) =>
-                      ProfileScreen(userCargo: cargo, nome: widget.nome),
+                  pageBuilder: (_, __, ___) => ProfileScreen(
+                    userCargo: cargo,
+                    nome: widget.nome,
+                    clube: clube,
+                  ),
                   transitionsBuilder: (_, animation, __, child) {
-                    const curve = Curves.easeInOut;
                     final tween = Tween(
                       begin: 0.0,
                       end: 1.0,
-                    ).chain(CurveTween(curve: curve));
+                    ).chain(CurveTween(curve: Curves.easeInOut));
                     return FadeTransition(
                       opacity: animation.drive(tween),
                       child: child,
@@ -1881,19 +2030,15 @@ $reqText
                         horizontal: 16,
                         vertical: 10,
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                          child: Container(
-                            color: Colors.white.withOpacity(0.05),
-                            padding: const EdgeInsets.all(12),
-                            child: buildStatusBar(),
-                          ),
+                      child: Center(
+                        child: Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: [buildStatusBar(), buildObjetivoWidget()],
                         ),
                       ),
                     ),
-                    buildObjetivoWidget(),
                     Expanded(
                       child: Center(
                         child: ConstrainedBox(
@@ -1947,7 +2092,7 @@ $reqText
                                           Text(
                                             ano,
                                             style: const TextStyle(
-                                              fontFamily: 'Poppins',
+                                              fontFamily: 'PressStart2P',
                                               color: Color(0xFFE1BEE7),
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
@@ -1957,7 +2102,7 @@ $reqText
                                           Text(
                                             descricao,
                                             style: const TextStyle(
-                                              fontFamily: 'Poppins',
+                                              fontFamily: 'PressStart2P',
                                               color: Colors.white,
                                               fontSize: 15,
                                             ),

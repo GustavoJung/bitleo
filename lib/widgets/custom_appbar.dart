@@ -61,18 +61,33 @@ PreferredSizeWidget buildCustomAppBarWithActions({
       ),
     ),
     iconTheme: const IconThemeData(color: Colors.white),
-    actions: actions.map((widget) {
-      // Se for IconButton, adiciona Tooltip baseado no ícone
-      if (widget is IconButton) {
-        final icon = widget.icon;
-        if (icon is Icon) {
-          return Tooltip(message: _getTooltipForAction(widget), child: widget);
-        }
-      }
-      // Se já tiver Tooltip por fora, mantém
-      return widget;
-    }).toList(),
+    actions: [..._addSpacingBetweenActions(actions), const SizedBox(width: 12)],
   );
+}
+
+List<Widget> _addSpacingBetweenActions(List<Widget> actions) {
+  final spacedActions = <Widget>[];
+  for (int i = 0; i < actions.length; i++) {
+    final widget = actions[i];
+    Widget finalWidget = widget;
+
+    if (widget is IconButton) {
+      final icon = widget.icon;
+      if (icon is Icon) {
+        finalWidget = Tooltip(
+          message: _getTooltipForAction(widget),
+          child: widget,
+        );
+      }
+    }
+
+    spacedActions.add(finalWidget);
+
+    if (i != actions.length - 1) {
+      spacedActions.add(const SizedBox(width: 8)); // espaçamento entre ícones
+    }
+  }
+  return spacedActions;
 }
 
 /// Função auxiliar para definir textos de hover
@@ -106,10 +121,7 @@ class LogoutButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: const Icon(
-        Icons.logout,
-        color: Colors.white, // 👈 cor definida aqui
-      ),
+      icon: const Icon(Icons.logout, color: Colors.white),
       onPressed: () async {
         await FirebaseAuth.instance.signOut();
         Navigator.pushAndRemoveUntil(

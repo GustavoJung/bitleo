@@ -18,8 +18,14 @@ Map<String, Map<String, String>> clubesInfo = {
 class ProfileScreen extends StatefulWidget {
   final String userCargo;
   final String nome;
+  final String clube;
 
-  const ProfileScreen({super.key, required this.userCargo, required this.nome});
+  const ProfileScreen({
+    super.key,
+    required this.userCargo,
+    required this.nome,
+    required this.clube,
+  });
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -198,40 +204,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           style: const TextStyle(color: Colors.white70),
                         ),
                         Text(
-                          clubeAtual,
+                          widget.clube,
                           style: const TextStyle(color: Colors.white54),
                         ),
-                        TextButton(
-                          onPressed: () => _showEditDialog(context),
-                          child: const Text(
-                            'Atualizar Clube',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
                       ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 32),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Flexible(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(minHeight: 140),
-                        child: infoCard(Icons.map, 'Região', regiaoDesc),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Flexible(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(minHeight: 140),
-                        child: infoCard(
-                          Icons.location_city,
-                          'Distrito $distrito',
-                          distritoDesc,
-                        ),
-                      ),
                     ),
                   ],
                 ),
