@@ -73,6 +73,7 @@ flutter:
     - assets/images/Logo_rgb_Leo_2C.png
     - assets/images/Recompensa.png
     - assets/images/out.png
+    - assets/images/quest.png
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:bitleo/services/firestore_service.dart';
+import 'package:bitleo/widgets/action_card.dart';
 import 'package:flutter/material.dart';
 import '../widgets/custom_appbar.dart';
 
@@ -102,38 +103,19 @@ class ActionsScreen extends StatelessWidget {
 
   String getRequirementMessage(
     Map<String, dynamic> action,
-    Map<String, int> status,
-    Map<String, int> atributos,
+    Map<String, int> todosDados,
   ) {
+    final reqs = action['requisitos'] as Map<String, int>?;
+
+    if (reqs == null) return 'Você não pode realizar esta ação no momento.';
+
     List<String> mensagens = [];
 
-    if ((action['label'] == 'Trabalhar' || action['label'] == 'Campanha') &&
-        status['saude']! < 30) {
-      mensagens.add(
-        'Aumente sua saúde para realizar esta ação. Saúde necessária: 30 (atual: ${status['saude']})',
-      );
-    }
-    if ((action['label'] == 'Campanha' || action['label'] == 'Estudar') &&
-        status['felicidade']! < 20) {
-      mensagens.add(
-        'Aumente sua felicidade. Felicidade necessária: 20 (atual: ${status['felicidade']})',
-      );
-    }
-    if (action['label'] == 'Estudar' && status['inteligencia']! < 15) {
-      mensagens.add(
-        'Aumente sua inteligência. Inteligência necessária: 15 (atual: ${status['inteligencia']})',
-      );
-    }
-
-    final reqs = action['requisitos'] as Map<String, int>?;
-    if (reqs != null) {
-      for (final entry in reqs.entries) {
-        final atual = atributos[entry.key] ?? 0;
-        if (atual < entry.value) {
-          mensagens.add(
-            'Aumente seu atributo ${entry.key}. Necessário: ${entry.value} (atual: $atual)',
-          );
-        }
+    for (final entry in reqs.entries) {
+      final chave = entry.key.toLowerCase();
+      final atual = todosDados[chave] ?? 0;
+      if (atual < entry.value) {
+        mensagens.add('${entry.key} ≥ ${entry.value} (atual: $atual)');
       }
     }
 
@@ -141,31 +123,21 @@ class ActionsScreen extends StatelessWidget {
       return 'Você não pode realizar esta ação no momento.';
     }
 
-    return mensagens.join('\n');
+    return 'Requisitos:\n${mensagens.join('\n')}';
   }
 
   bool canPerformAction(
     Map<String, dynamic> action,
-    Map<String, int> status,
-    Map<String, int> atributos,
+    Map<String, int> todosDados,
   ) {
-    // Pré-requisitos fixos
-    if ((action['label'] == 'Trabalhar' || action['label'] == 'Campanha') &&
-        status['saude']! < 30) {
-      return false;
-    }
-    if ((action['label'] == 'Campanha' || action['label'] == 'Estudar') &&
-        status['felicidade']! < 20) {
-      return false;
-    }
-    if (action['label'] == 'Estudar' && status['saude']! < 15) return false;
-
-    // Pré-requisitos dinâmicos
     final reqs = action['requisitos'] as Map<String, int>?;
-    if (reqs != null) {
-      for (final entry in reqs.entries) {
-        if ((atributos[entry.key] ?? 0) < entry.value) return false;
-      }
+
+    if (reqs == null) return true;
+
+    for (final entry in reqs.entries) {
+      final chave = entry.key.toLowerCase();
+      final atual = todosDados[chave] ?? 0;
+      if (atual < entry.value) return false;
     }
 
     return true;
@@ -173,43 +145,39 @@ class ActionsScreen extends StatelessWidget {
 
   String requirementText(
     Map<String, dynamic> action,
-    Map<String, int> atributos,
+    Map<String, int> todosDados,
   ) {
-    List<String> reqs = [];
+    final reqs = action['requisitos'] as Map<String, int>?;
 
-    if (action['label'] == 'Trabalhar' || action['label'] == 'Campanha') {
-      reqs.add('Saúde ≥ 30');
-    }
-    if (action['label'] == 'Campanha' || action['label'] == 'Estudar') {
-      reqs.add('Felicidade ≥ 20');
-    }
-    if (action['label'] == 'Estudar') {
-      reqs.add('Inteligência ≥ 15');
-    }
+    if (reqs == null) return 'Sem requisitos.';
 
-    final dinamicReqs = action['requisitos'] as Map<String, int>?;
-    if (dinamicReqs != null) {
-      for (final entry in dinamicReqs.entries) {
-        final atual = atributos[entry.key] ?? 0;
-        reqs.add('${entry.key} ≥ ${entry.value} (atual: $atual)');
-      }
+    List<String> mensagens = [];
+
+    for (final entry in reqs.entries) {
+      final chave = entry.key.toLowerCase();
+      final atual = todosDados[chave] ?? 0;
+      mensagens.add('${entry.key} ≥ ${entry.value} (atual: $atual)');
     }
 
-    return reqs.join(', ');
+    return mensagens.join(', ');
   }
 
   @override
   Widget build(BuildContext context) {
     final status = this.status;
     final atributos = this.atributos;
-
+    final Map<String, int> todosDados = {
+      ...status.map((k, v) => MapEntry(k.toLowerCase(), v)),
+      ...atributos.map((k, v) => MapEntry(k.toLowerCase(), v)),
+    };
     final actions = [
       {
         'label': 'Trabalhar',
         'description': 'Ganhe dinheiro, mas fique um pouco mais estressado.',
         'icon': Icons.work,
-        'effects': {'dinheiro': 20, 'felicidade': -3, 'xp': 3},
+        'effects': {'dinheiro': 10, 'felicidade': -3, 'xp': 3},
         'info': 'Trabalhar aumenta sua renda, necessário para eventos e ações.',
+        'requisitos': {'saude': 30},
       },
       {
         'label': 'Estudar',
@@ -217,45 +185,43 @@ class ActionsScreen extends StatelessWidget {
         'icon': Icons.school,
         'effects': {'inteligencia': 5, 'felicidade': -2, 'xp': 3},
         'info': 'Estudar ajuda a atingir cargos que exigem inteligência.',
+        'requisitos': {'saude': 10, 'felicidade': 15},
       },
       {
         'label': 'Campanha',
         'description': 'Engaje a comunidade e evolua no clube.',
         'icon': Icons.volunteer_activism,
-        'effects': {'felicidade': 5, 'xp': 5, 'dinheiro': -10},
+        'effects': {'felicidade': 5, 'xp': 5, 'dinheiro': -5},
         'info': 'Realizar campanhas dá XP para crescer no clube.',
+        'requisitos': {'saude': 20, 'felicidade': 15},
       },
       {
         'label': 'Descansar',
         'description': 'Recupere saúde e bem-estar. Todo líder precisa disso!',
         'icon': Icons.bedtime,
-        'effects': {'saude': 10, 'felicidade': 10, 'xp': 1},
+        'effects': {'saude': 15, 'felicidade': 20, 'xp': 1},
         'info': 'Essencial para manter felicidade e saúde equilibradas.',
       },
       {
         'label': 'Organizar Evento',
         'description': 'Mostre sua liderança e ganhe XP.',
         'icon': Icons.event,
-        'effects': {
-          'organização': 3,
-          'xp': 5,
-          'felicidade': 2,
-          'dinheiro': -10,
-        },
+        'effects': {'organização': 1, 'xp': 10, 'felicidade': 3},
         'info': 'Organizar eventos melhora sua organização e dá XP.',
+        'requisitos': {'organização': 5},
       },
       {
         'label': 'Participar de Reunião',
         'description': 'Melhore sua oratória e ganhe experiência.',
         'icon': Icons.groups,
-        'effects': {'oratória': 2, 'xp': 3},
+        'effects': {'oratória': 1, 'xp': 3},
         'info': 'Ótimo para desenvolver oratória e avançar nos cargos.',
       },
       {
         'label': 'Mentorar Novato',
         'description': 'Aumente sua empatia e fortaleça o clube.',
         'icon': Icons.support,
-        'effects': {'empatia': 3, 'xp': 4, 'felicidade': 2},
+        'effects': {'empatia': 1, 'xp': 4, 'felicidade': 4},
         'info': 'Mentorar ajuda a crescer como líder e aumenta empatia.',
         'requisitos': {'Liderança': 10},
       },
@@ -263,15 +229,17 @@ class ActionsScreen extends StatelessWidget {
         'label': 'Redes Sociais',
         'description': 'Divulgue ações e mostre seu talento digital.',
         'icon': Icons.share,
-        'effects': {'oratória': 2, 'organização': 1, 'xp': 4},
+        'effects': {'oratória': 1, 'organização': 1, 'xp': 4},
         'info': 'Trabalhar com redes melhora oratória e organização.',
+        'requisitos': {'felicidade': 15},
       },
       {
         'label': 'Reunião Distrital',
         'description': 'Interaja com outros clubes e expanda sua visão.',
         'icon': Icons.location_city,
-        'effects': {'oratória': 3, 'empatia': 2, 'xp': 6, 'dinheiro': -15},
+        'effects': {'oratória': 1, 'empatia': 1, 'xp': 5, 'dinheiro': -15},
         'info': 'Reuniões distritais são ótimas para conexões e XP.',
+        'requisitos': {'empatia': 3, 'felicidade': 20},
       },
     ];
 
@@ -286,8 +254,8 @@ class ActionsScreen extends StatelessWidget {
             itemCount: actions.length,
             itemBuilder: (context, index) {
               final action = actions[index];
-              final pode = canPerformAction(action, status, atributos);
-              final reqText = requirementText(action, atributos);
+              final pode = canPerformAction(action, todosDados);
+              final reqText = requirementText(action, todosDados);
 
               final String label = action['label'] as String;
               final String description = action['description'] as String;
@@ -296,87 +264,29 @@ class ActionsScreen extends StatelessWidget {
               final Map<String, dynamic> effects =
                   action['effects'] as Map<String, dynamic>;
 
-              return Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Opacity(
-                      opacity: pode ? 1.0 : 0.4,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF6A1B9A).withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.1),
-                          ),
+              return ActionCard(
+                action: action,
+                pode: pode,
+                reqText: reqText,
+                onTap: () {
+                  if (pode) {
+                    Navigator.pop(context);
+                    onActionSelected(effects, label);
+                  } else {
+                    final mensagem = getRequirementMessage(action, todosDados);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          mensagem,
+                          style: const TextStyle(color: Colors.white),
                         ),
-                        child: ListTile(
-                          leading: Icon(
-                            icon,
-                            color: pode ? Colors.white : Colors.white38,
-                            size: 32,
-                          ),
-                          title: Text(
-                            label,
-                            style: TextStyle(
-                              color: pode ? Colors.white : Colors.white38,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          subtitle: Text(
-                            description,
-                            style: TextStyle(
-                              color: pode ? Colors.white70 : Colors.white38,
-                            ),
-                          ),
-                          trailing: Tooltip(
-                            message: pode
-                                ? 'Saiba mais'
-                                : 'Você não pode realizar esta ação.\nRequisitos:\n$reqText',
-                            child: IconButton(
-                              icon: Icon(
-                                Icons.info_outline,
-                                color: pode ? Colors.white70 : Colors.white38,
-                              ),
-                              onPressed: () =>
-                                  showInfoDialog(context, label, info),
-                            ),
-                          ),
-
-                          onTap: pode
-                              ? () {
-                                  Navigator.pop(context);
-                                  onActionSelected(effects, label);
-                                }
-                              : () {
-                                  final mensagem = getRequirementMessage(
-                                    action,
-                                    status,
-                                    atributos,
-                                  );
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        mensagem,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      backgroundColor: Colors.deepPurple,
-                                      duration: const Duration(seconds: 4),
-                                    ),
-                                  );
-                                },
-                        ),
+                        backgroundColor: Colors.deepPurple,
+                        duration: const Duration(seconds: 4),
                       ),
-                    ),
-                  ),
-                ),
+                    );
+                  }
+                },
+                onInfo: () => showInfoDialog(context, label, info),
               );
             },
           ),

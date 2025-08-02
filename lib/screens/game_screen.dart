@@ -4,6 +4,7 @@ import 'package:bitleo/screens/name_screen.dart';
 import 'package:bitleo/services/CooldownHelper.dart';
 import 'package:bitleo/services/action_messages.dart';
 import 'package:bitleo/services/firestore_service.dart';
+import 'package:bitleo/widgets/animated_story_item.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
@@ -81,6 +82,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   int totalConquistasLista = 0;
   Set<String> animatingStatus = {};
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   late AnimationController _colorController;
   late Animation<Color?> colorAnimation1;
   late Animation<Color?> colorAnimation2;
@@ -201,7 +203,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         distribuiuPontosIniciais = distribuiu;
         pontosDeAtributo = p;
         xpAnteriorParaPontos = ultimoXP;
-        story = historico;
+        for (var item in historico.reversed) {
+          story.insert(0, item);
+          _listKey.currentState?.insertItem(0);
+        }
         dadosCarregados = true;
         conquistasResgatadas = conquistasResgatadasSalvas;
         totalConquistasLista = getTotalConquistas.length;
@@ -658,7 +663,8 @@ $reqText
 
   Future<void> adicionarAoFeed(String texto) async {
     setState(() {
-      story.add(texto);
+      story.insert(0, texto);
+      _listKey.currentState?.insertItem(0);
     });
     await Future.delayed(const Duration(milliseconds: 100));
     await FirestoreService.salvarHistorico(story);
@@ -1599,43 +1605,6 @@ $reqText
     );
   }
 
-  Widget _buildBadgeItem(String label, int value, Color color, Widget icon) {
-    return Container(
-      width: 100,
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(width: 28, height: 28, child: Center(child: icon)),
-          const SizedBox(height: 4),
-          Text(
-            '$value',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-          Text(
-            label,
-            style: const TextStyle(color: Colors.white, fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget buildStatusBarItem({
     required String keyName,
     required String label,
@@ -2043,77 +2012,9 @@ $reqText
                       child: Center(
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 700),
-                          child: ListView.builder(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            itemCount: story.length,
-                            itemBuilder: (context, index) {
-                              final reversedStory = story.reversed.toList();
-                              final texto = reversedStory[index];
-                              final partes = texto.split(': ');
-                              final ano = partes.first;
-                              final descricao = partes.length > 1
-                                  ? partes.sublist(1).join(': ')
-                                  : '';
-                              return Container(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.05),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: Colors.white.withOpacity(0.1),
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.2),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Icon(
-                                      Icons.event_note,
-                                      color: Color(0xFFD1B3FF),
-                                      size: 24,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            ano,
-                                            style: const TextStyle(
-                                              fontFamily: 'PressStart2P',
-                                              color: Color(0xFFE1BEE7),
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            descricao,
-                                            style: const TextStyle(
-                                              fontFamily: 'PressStart2P',
-                                              color: Colors.white,
-                                              fontSize: 15,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
+                          child: AnimatedStoryList(
+                            story: story,
+                            listKey: _listKey,
                           ),
                         ),
                       ),
