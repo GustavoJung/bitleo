@@ -415,17 +415,13 @@ $reqText
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
-                            Icons.tune,
-                            size: 48,
-                            color: Colors.amberAccent,
-                          ),
+                          const Icon(Icons.tune, size: 48, color: Colors.white),
                           const SizedBox(height: 12),
                           const Text(
                             'Distribua Seus Pontos',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: Colors.amberAccent,
+                              color: Colors.white,
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
                               decoration: TextDecoration.none,
@@ -1631,7 +1627,8 @@ $reqText
       },
       'EventoEspecialACAMPALEO': {
         'titulo': 'ACAMPALEO',
-        'descricao': 'Acampamento LEO de integração com outros clubes.',
+        'descricao':
+            'Acampamento LEO de integração com outros clubes e muita festa.',
       },
       'EventoEspecialEncontroRegiao': {
         'titulo': 'Encontro de Região',
@@ -1641,7 +1638,7 @@ $reqText
       'EventoEspecialCONFE': {
         'titulo': 'CONFE',
         'descricao':
-            'Conferência anual. Celebração dos resultados e premiações.',
+            'Conferência anual para celebrar os resultados e premiar clubes e membros.',
       },
     };
     final nomeEventoPadrao = padronizarNomeEvento(nomeEvento);
@@ -1798,22 +1795,22 @@ $reqText
       {
         'titulo': 'Como jogar',
         'texto':
-            'Toque em "Nova atividade" pra começar a sua saga. Cada ação vale tempo e pode mudar seus atributos. Escolha com sabedoria… ou só vai clicando mesmo, ninguém vai te julgar (mentira, vai sim).',
+            'Toque em "Nova atividade" pra começar a sua saga. Cada ação vale tempo e pode mudar seus atributos. ',
       },
       {
         'titulo': 'Atributos e Status',
         'texto':
-            'Fique de olho em dinheiro, inteligência, felicidade e saúde. Se um deles zerar, vai passar vergonha no clube… ou pior, perde o jogo!',
+            'Fique de olho em dinheiro, inteligência, felicidade e saúde. Gerencie o status do seu personagem!',
       },
       {
         'titulo': 'Distribua seus Pontos!',
         'texto':
-            'Quando você ganhar pontos de atributo, o ícone de perfil vai aparecer com um badge. Clique lá e distribua seus pontinhos. É tipo montar personagem em RPG, só que ninguém vai te chamar de nerd (só eu, talvez).',
+            'Melhore seus atributos acessando o seu perfil. Distribua seus pontos sempre que possível para subir de cargo!',
       },
       {
         'titulo': 'Conquistas',
         'texto':
-            'Desbloqueie conquistas fazendo coisas legais. Se conseguir todas, me avisa pra eu te dar parabéns — ou pelo menos um emoji de foguinho. 🚀',
+            'Desbloqueie conquistas realizando ações no jogo e melhorando seu personagem! ',
       },
     ];
 
@@ -1871,14 +1868,14 @@ $reqText
                           const Icon(
                             Icons.school,
                             size: 48,
-                            color: Colors.amberAccent,
+                            color: Colors.white,
                           ),
                           const SizedBox(height: 12),
                           Text(
                             page['titulo']!,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
-                              color: Colors.amberAccent,
+                              color: Colors.white,
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
                               decoration:
