@@ -151,7 +151,7 @@ class _SplashScreenState extends State<SplashScreen>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Logo limpa, sem firula
-                  Image.asset('assets/images/Logo_rgb_Leo_2C.png', width: 180),
+                  Image.asset('assets/images/logo.png', width: 180),
                   const SizedBox(height: 28),
                   const Text(
                     'Vida de LEO Clube',

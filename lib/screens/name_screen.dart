@@ -262,8 +262,8 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
                           ScaleTransition(
                             scale: _logoAnimation,
                             child: Image.asset(
-                              'assets/images/Logo_rgb_Leo_2C.png',
-                              width: 140,
+                              'assets/images/logo.png',
+                              width: 300,
                             ),
                           ),
                           const SizedBox(height: 30),

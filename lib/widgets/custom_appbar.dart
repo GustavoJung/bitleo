@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../screens/name_screen.dart';
 
+/// Logo do app: mude o caminho para o seu asset!
+Widget _buildLogo() => Image.asset('assets/images/logo.png', height: 60);
+
 /// AppBar simples (sem ações)
 PreferredSizeWidget buildCustomAppBar(String title) {
   return AppBar(
@@ -19,14 +22,20 @@ PreferredSizeWidget buildCustomAppBar(String title) {
         child: Container(color: const Color(0xFF6A1B9A).withOpacity(0.6)),
       ),
     ),
-    title: Text(
-      title,
-      style: const TextStyle(
-        fontFamily: 'Poppins',
-        color: Colors.white,
-        fontSize: 22,
-        fontWeight: FontWeight.bold,
-      ),
+    title: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: const TextStyle(
+            fontFamily: 'Poppins',
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     ),
     iconTheme: const IconThemeData(color: Colors.white),
   );
@@ -51,14 +60,20 @@ PreferredSizeWidget buildCustomAppBarWithActions({
         child: Container(color: const Color(0xFF6A1B9A).withOpacity(0.6)),
       ),
     ),
-    title: Text(
-      title,
-      style: const TextStyle(
-        fontFamily: 'Poppins',
-        color: Colors.white,
-        fontSize: 22,
-        fontWeight: FontWeight.bold,
-      ),
+    title: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: const TextStyle(
+            fontFamily: 'Poppins',
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     ),
     iconTheme: const IconThemeData(color: Colors.white),
     actions: [..._addSpacingBetweenActions(actions), const SizedBox(width: 12)],
