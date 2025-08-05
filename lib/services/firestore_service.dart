@@ -83,7 +83,6 @@ class FirestoreService {
     int? eventosOrganizados,
     int? reunioesParticipadas,
     int? redesSociais,
-    int? reunioesDistritais,
   }) async {
     if (xp >= 10) await desbloquear(uid, 'Começando a Jornada');
     if (xp >= 50) await desbloquear(uid, 'Primeiro Passo de Liderança');
@@ -98,7 +97,7 @@ class FirestoreService {
     if ((eventosOrganizados ?? 0) >= 5)
       await desbloquear(uid, 'Organizador Profissional');
     if ((redesSociais ?? 0) >= 10) await desbloquear(uid, 'Influencer');
-    if ((reunioesDistritais ?? 0) >= 3)
+    if ((reunioesParticipadas ?? 0) >= 3)
       await desbloquear(uid, 'Amigo de Todos');
     if ((campanhas ?? 0) >= 1) await desbloquear(uid, 'Campeão de Campanha');
     if ((mentorou ?? 0) >= 1) await desbloquear(uid, 'Mentorando Novos LEOs');
@@ -381,6 +380,23 @@ class FirestoreService {
 
   static Future<void> marcarInicioDoJogo(String uid) async {
     await desbloquear(uid, 'Primeiro Passo');
+  }
+
+  static Future<List<Map<String, dynamic>>> getRanking() async {
+    final snap = await FirebaseFirestore.instance
+        .collection('users')
+        .orderBy('status.xp', descending: true)
+        .limit(10) // pega só o top 10
+        .get();
+    return snap.docs.map((doc) {
+      final data = doc.data();
+      return {
+        'nome': data['nome'] ?? 'Sem Nome',
+        'xp': data['status']?['xp'] ?? 0,
+        'uid': doc.id,
+        'clube': data['clube'],
+      };
+    }).toList();
   }
 
   static Future<void> marcarTelaVisitada(String uid, String telaId) async {

@@ -25,7 +25,7 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   List<String> story = [];
 
-  int dinheiro = 30;
+  int dinheiro = 40;
   int inteligencia = 5;
   int felicidade = 70;
   int saude = 70;
@@ -79,7 +79,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   final random = Random();
   final ScrollController _scrollController = ScrollController();
   Map<String, int> cargosRecusados = {};
-  List<String> conquistas = [];
   List<String> conquistasResgatadas = [];
 
   int totalConquistasLista = 0;
@@ -184,7 +183,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       final p = results[3] as int;
       final ultimoXP = results[4] as int;
       final historico = results[5] as List<String>;
-      final conquistasSalvas = await FirestoreService.carregarConquistas(uid);
       final getTotalConquistas = await FirestoreService.conquistasDesbloqueadas(
         uid,
       );
@@ -204,7 +202,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         xp = status['xp'] ?? xp;
         idade = (status['idade'] ?? idade).toDouble();
         cargo = auxCargo;
-        conquistas = conquistasSalvas;
         atributos = dados;
         distribuiuPontosIniciais = distribuiu;
         pontosDeAtributo = p;
@@ -300,7 +297,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     await FirestoreService.desbloquear(uid, conquista);
 
     setState(() {
-      conquistas.add(conquista);
       totalConquistasLista++;
     });
 
@@ -719,10 +715,16 @@ $reqText
                                 for (final nome in conquistasDepois.difference(
                                   conquistasAntes,
                                 )) {
-                                  adicionarConquista(nome);
-                                  adicionarAoFeed(
-                                    "Conquista desbloqueada: $nome 🎉",
-                                  );
+                                  if (!story.any(
+                                    (item) => item.contains(
+                                      'Conquista desbloqueada: $nome',
+                                    ),
+                                  )) {
+                                    adicionarConquista(nome);
+                                    adicionarAoFeed(
+                                      "Conquista desbloqueada: $nome 🎉",
+                                    );
+                                  }
                                 }
                                 setState(() {
                                   distribuiuPontosIniciais = true;
@@ -873,7 +875,7 @@ $reqText
       'EventoEspecialJALC',
       'EventoEspecialSEDEL',
       'EventoEspecialACAMPALEO',
-      'EventoEspecialEncontrodeRegiao',
+      'EventoEspecialEncontroRegiao',
       'EventoEspecialCONFE',
     ];
     int eventosNoAno = eventosEspeciais.length;
@@ -1087,12 +1089,6 @@ $reqText
       case AcaoTipo.RedesSociais:
         await FirestoreService.incrementarProgressoConquista(uid, 'Influencer');
         break;
-      case AcaoTipo.ReuniaoDistrital:
-        await FirestoreService.incrementarProgressoConquista(
-          uid,
-          'Amigo de Todos',
-        );
-        break;
       default:
         break;
     }
@@ -1124,10 +1120,8 @@ $reqText
       trabalhou: acoesExecutadasEsteAno['Trabalhar'] ?? 0,
       mentorou: acoesExecutadasEsteAno['Mentorar Novato'] ?? 0,
       eventosOrganizados: acoesExecutadasEsteAno['Organizar Evento'] ?? 0,
-      reunioesParticipadas:
-          acoesExecutadasEsteAno['Participar de Reunião'] ?? 0,
+      reunioesParticipadas: acoesExecutadasEsteAno['ParticiparReuniao'] ?? 0,
       redesSociais: acoesExecutadasEsteAno['Redes Sociais'] ?? 0,
-      reunioesDistritais: acoesExecutadasEsteAno['Reunião Distrital'] ?? 0,
     );
 
     final conquistasDepois = await FirestoreService.conquistasDesbloqueadas(
@@ -1135,15 +1129,18 @@ $reqText
     );
 
     for (final nome in conquistasDepois.difference(conquistasAntes)) {
-      adicionarConquista(nome); // Sua função já evita duplicação local
-      adicionarAoFeed("$anoAtual: Conquista desbloqueada: $nome 🎉");
+      if (!story.any(
+        (item) => item.contains('Conquista desbloqueada: $nome'),
+      )) {
+        adicionarConquista(nome);
+        adicionarAoFeed("$anoAtual: Conquista desbloqueada: $nome 🎉");
+      }
     }
     setState(() {
       if (gasto != 0) triggerStatusAnim('dinheiro');
       if (intel != 0) triggerStatusAnim('inteligencia');
       if (feliz != 0) triggerStatusAnim('felicidade');
       if (vida != 0) triggerStatusAnim('saude');
-      conquistas = conquistasDepois.toList();
       checkEventoTrimestral();
       updateCargo();
       isProcessing = false;
@@ -1591,10 +1588,32 @@ $reqText
   }
 
   String padronizarNomeEvento(String nomeEvento) {
-    if (!nomeEvento.startsWith('EventoEspecial')) {
-      return 'EventoEspecial${nomeEvento.replaceAll(' ', '')}';
+    // Remove acentos e espaços
+    String semAcento = nomeEvento
+        .replaceAll(' ', '')
+        .replaceAll('ã', 'a')
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .replaceAll('ç', 'c')
+        .replaceAll('Á', 'A')
+        .replaceAll('É', 'E')
+        .replaceAll('Í', 'I')
+        .replaceAll('Ó', 'O')
+        .replaceAll('Ú', 'U')
+        .replaceAll('Ç', 'C')
+        .replaceAll('õ', 'o')
+        .replaceAll('Ô', 'O')
+        .replaceAll('ô', 'o')
+        .replaceAll('Ê', 'E')
+        .replaceAll('ê', 'e');
+
+    if (!semAcento.startsWith('EventoEspecial')) {
+      return 'EventoEspecial$semAcento';
     }
-    return nomeEvento.replaceAll(' ', '');
+    return semAcento;
   }
 
   void showEventoEspecial(String nomeEvento, {bool contaComoAcao = true}) {
@@ -1614,7 +1633,7 @@ $reqText
         'titulo': 'ACAMPALEO',
         'descricao': 'Acampamento LEO de integração com outros clubes.',
       },
-      'EventoEspecialEncontrodeRegião': {
+      'EventoEspecialEncontroRegiao': {
         'titulo': 'Encontro de Região',
         'descricao':
             'Reunião entre clubes da região com disputas artísticas e definições de eventos.',
@@ -1961,7 +1980,6 @@ $reqText
       reunioesParticipadas:
           acoesExecutadasEsteAno['Participar de Reunião'] ?? 0,
       redesSociais: acoesExecutadasEsteAno['Redes Sociais'] ?? 0,
-      reunioesDistritais: acoesExecutadasEsteAno['Reunião Distrital'] ?? 0,
     );
   }
 
@@ -2403,6 +2421,151 @@ $reqText
                   conquistasResgatadas = conquistasResgatadasAtualizadas;
                 });
               }
+            },
+          ),
+          IconButton(
+            icon: SizedBox(
+              width: 28,
+              height: 28,
+              child: Image.asset(
+                'assets/images/ranking.png',
+                color: Colors.white,
+              ),
+            ),
+            tooltip: 'Ranking dos Jogadores',
+            onPressed: () async {
+              // Chame aqui seu dialog, página ou modal de ranking
+              showDialog(
+                context: context,
+                builder: (context) {
+                  return Dialog(
+                    backgroundColor: Colors.transparent,
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 600),
+                        child: Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.85),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: FutureBuilder<List<Map<String, dynamic>>>(
+                            future: FirestoreService.getRanking(), // Seu método
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData) {
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              }
+                              final ranking = snapshot.data!;
+                              return Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Center(
+                                    child: Text(
+                                      '🏆 Ranking dos Jogadores',
+                                      style: TextStyle(
+                                        color: Colors.amberAccent,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 20,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 18),
+                                  for (var i = 0; i < ranking.length; i++)
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 4,
+                                      ),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          SizedBox(
+                                            width:
+                                                32, // ajusta a largura pra caber "10º" alinhado
+                                            child: Text(
+                                              '${i + 1}º',
+                                              textAlign: TextAlign.right,
+                                              style: const TextStyle(
+                                                color: Colors.white70,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  ranking[i]['nome'] ??
+                                                      'Sem Nome',
+                                                  style: TextStyle(
+                                                    color:
+                                                        ranking[i]['uid'] == uid
+                                                        ? Colors.amberAccent
+                                                        : Colors.white,
+                                                    fontWeight:
+                                                        ranking[i]['uid'] == uid
+                                                        ? FontWeight.bold
+                                                        : FontWeight.normal,
+                                                    fontSize: 16,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  ranking[i]['clube']
+                                                              ?.toString()
+                                                              .isNotEmpty ==
+                                                          true
+                                                      ? ranking[i]['clube']
+                                                      : 'Sem Clube',
+                                                  style: const TextStyle(
+                                                    color: Colors.white54,
+                                                    fontSize: 13,
+                                                    fontStyle: FontStyle.italic,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          Text(
+                                            '${ranking[i]['xp'] ?? 0} XP',
+                                            style: const TextStyle(
+                                              color: Colors.purpleAccent,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+
+                                  const SizedBox(height: 12),
+                                  Center(
+                                    child: TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text(
+                                        'Fechar',
+                                        style: TextStyle(
+                                          color: Colors.amberAccent,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
             },
           ),
           OutlinedButton.icon(

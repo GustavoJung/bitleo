@@ -78,6 +78,7 @@ flutter:
     - assets/images/leadership.png
     - assets/images/public-speaking.png
     - assets/images/time-management.png
+    - assets/images/ranking.png
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
