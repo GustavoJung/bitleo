@@ -25,7 +25,6 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
   bool _isCreatingAccount = false;
 
   final AuthService _authService = AuthService();
-  final FirestoreService _firestoreService = FirestoreService();
   var _animationController;
   var _logoAnimation;
 
@@ -82,7 +81,7 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
       final userCredential = await _authService.signUpWithEmail(email, senha);
       final uid = userCredential.user!.uid;
 
-      await _firestoreService.createUserDocument(
+      await FirestoreService.createUserDocument(
         uid: uid,
         data: {
           'nome': nome,
@@ -92,7 +91,7 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
         },
       );
 
-      await _firestoreService.updateUserName(uid, nome);
+      await FirestoreService.updateUserName(uid, nome);
 
       _goToSplash();
     } catch (e) {
@@ -123,11 +122,11 @@ class _NameScreenState extends State<NameScreen> with TickerProviderStateMixin {
       final userCredential = await _authService.signInWithEmail(email, senha);
       final uid = userCredential.user!.uid;
 
-      final doc = await _firestoreService.getUserDocument(uid);
+      final doc = await FirestoreService.getUserDocument(uid);
       final nome = (doc.data()?['nome'] as String?) ?? '';
 
       if (nome.isNotEmpty) {
-        await _firestoreService.updateUserName(uid, nome);
+        await FirestoreService.updateUserName(uid, nome);
       }
 
       _goToSplash();

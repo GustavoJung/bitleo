@@ -74,6 +74,10 @@ flutter:
     - assets/images/Recompensa.png
     - assets/images/out.png
     - assets/images/quest.png
+    - assets/images/empathy.png
+    - assets/images/leadership.png
+    - assets/images/public-speaking.png
+    - assets/images/time-management.png
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

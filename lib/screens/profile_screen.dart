@@ -1,42 +1,28 @@
-import 'package:bitleo/services/clube_storage.dart';
 import 'package:bitleo/services/firestore_service.dart';
 import 'package:flutter/material.dart';
 import '../widgets/custom_appbar.dart';
 import '../services/atributos_storage.dart';
 
-Map<String, Map<String, String>> clubesInfo = {
-  'LEO Clube Ômega Seara Centenário': {
-    'regiao': 'Região B',
-    'distrito': 'LD-8',
-    'regiaoDesc':
-        'Região B é conhecida pelo seu espírito inovador e união entre clubes.',
-    'distritoDesc':
-        'O Distrito LD-8 abrange diversos clubes do sul do Brasil, com forte tradição no movimento LEO.',
-  },
-};
-
 class ProfileScreen extends StatefulWidget {
   final String userCargo;
   final String nome;
   final String clube;
+  final String uid;
 
   const ProfileScreen({
     super.key,
     required this.userCargo,
     required this.nome,
     required this.clube,
+    required this.uid,
   });
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
-  String regiao = 'Não informado';
-  String distrito = 'Não informado';
-  String regiaoDesc = 'Atualize seu clube para ver a região.';
-  String distritoDesc = 'Atualize seu clube para ver o distrito.';
-
+class _ProfileScreenState extends State<ProfileScreen>
+    with TickerProviderStateMixin {
   Map<String, int> atributos = {
     'Oratória': 0,
     'Liderança': 0,
@@ -45,125 +31,104 @@ class _ProfileScreenState extends State<ProfileScreen> {
   };
 
   int pontosRestantes = 0;
-  int dinheiro = 0;
-  int inteligencia = 0;
-  int felicidade = 0;
-  int saude = 0;
-  int xp = 0;
-  double idade = 18;
-  String clubeAtual = 'Clube não informado';
 
   @override
   void initState() {
     super.initState();
-    carregarClube();
     carregarDados();
-    FirestoreService.marcarTelaVisitada('profile');
-  }
-
-  Future<void> carregarClube() async {
-    final clube = await ClubeStorage.carregar();
-    setState(() {
-      clubeAtual = clube;
-      if (clubesInfo.containsKey(clube)) {
-        regiao = clubesInfo[clube]!['regiao']!;
-        distrito = clubesInfo[clube]!['distrito']!;
-        regiaoDesc = clubesInfo[clube]!['regiaoDesc']!;
-        distritoDesc = clubesInfo[clube]!['distritoDesc']!;
-      }
-    });
+    FirestoreService.marcarTelaVisitada(widget.uid, 'profile');
   }
 
   Future<void> carregarDados() async {
-    final status = await AtributosStorageFirestore.carregarStatus();
-    final a = await AtributosStorageFirestore.carregar();
-    final p = await AtributosStorageFirestore.carregarPontos();
+    final status = await FirestoreService.carregarStatus(widget.uid);
+    final a = await FirestoreService.carregarAtributos(widget.uid);
+    final p = await FirestoreService.carregarPontos(widget.uid);
 
     setState(() {
       atributos = a;
       pontosRestantes = p;
-      dinheiro = status['dinheiro'] ?? 0;
-      inteligencia = status['inteligencia'] ?? 0;
-      felicidade = status['felicidade'] ?? 0;
-      saude = status['saude'] ?? 0;
-      xp = status['xp'] ?? 0;
-      idade = (status['idade'] as num?)?.toDouble() ?? 18.0;
     });
   }
 
-  void _showEditDialog(BuildContext context) {
-    String? clubeSelecionado;
+  Widget buildTituloEDica() {
+    final valores = atributos.values.toSet();
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF4A148C),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Atualizar Clube',
-          style: TextStyle(
-            color: Colors.white,
+    // Caso todos estejam iguais
+    if (valores.length == 1) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          Text(
+            '🎯 Equilíbrio Total',
+            style: TextStyle(
+              color: Colors.amberAccent,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 6),
+          Text(
+            'Você está equilibrado em todas as áreas. Continue assim!',
+            style: TextStyle(color: Colors.white70, fontSize: 14),
+          ),
+          SizedBox(height: 24),
+        ],
+      );
+    }
+
+    final atributoMaisAlto = atributos.entries.reduce(
+      (a, b) => a.value >= b.value ? a : b,
+    );
+    final atributoMaisBaixo = atributos.entries.reduce(
+      (a, b) => a.value <= b.value ? a : b,
+    );
+
+    final nomeAlto = atributoMaisAlto.key;
+    final nomeBaixo = atributoMaisBaixo.key;
+    final valorAlto = atributoMaisAlto.value;
+    final valorBaixo = atributoMaisBaixo.value;
+
+    // Título baseado no nível do atributo mais alto
+    String titulo;
+    if (valorAlto >= 45) {
+      titulo = '🌟 Mestre em $nomeAlto';
+    } else if (valorAlto >= 30) {
+      titulo = '🧠 Avançado em $nomeAlto';
+    } else if (valorAlto >= 15) {
+      titulo = '🚀 Em ascensão em $nomeAlto';
+    } else {
+      titulo = '🌱 Iniciante promissor';
+    }
+
+    // Dica baseada na diferença entre atributos
+    final diferenca = valorAlto - valorBaixo;
+    String dica;
+    if (diferenca >= 30) {
+      dica =
+          'Você está se especializando em ${nomeAlto.toLowerCase()}, mas está negligenciando ${nomeBaixo.toLowerCase()}.';
+    } else if (diferenca >= 15) {
+      dica =
+          'Boa progressão em ${nomeAlto.toLowerCase()}, mas que tal dar atenção a ${nomeBaixo.toLowerCase()}?';
+    } else {
+      dica =
+          'Seu perfil está relativamente equilibrado, mas ${nomeBaixo.toLowerCase()} ainda pode evoluir.';
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          titulo,
+          style: const TextStyle(
+            color: Colors.amberAccent,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
         ),
-        content: DropdownButtonFormField<String>(
-          value: clubeSelecionado,
-          dropdownColor: const Color(0xFF4A148C),
-          decoration: const InputDecoration(
-            filled: true,
-            fillColor: Color(0xFF4A148C),
-            hintText: 'Selecione seu clube',
-            hintStyle: TextStyle(color: Colors.white54),
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.white54),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.white),
-            ),
-          ),
-          iconEnabledColor: Colors.white,
-          style: const TextStyle(color: Colors.white),
-          items: clubesInfo.keys.map((String clube) {
-            return DropdownMenuItem<String>(
-              value: clube,
-              child: Text(clube, style: const TextStyle(color: Colors.white)),
-            );
-          }).toList(),
-          onChanged: (String? newValue) {
-            clubeSelecionado = newValue;
-            ClubeStorage.salvar(clubeSelecionado!);
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancelar',
-              style: TextStyle(color: Colors.white70),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
-            ),
-            onPressed: () {
-              if (clubeSelecionado != null &&
-                  clubesInfo.containsKey(clubeSelecionado)) {
-                setState(() {
-                  regiao = clubesInfo[clubeSelecionado]!['regiao']!;
-                  distrito = clubesInfo[clubeSelecionado]!['distrito']!;
-                  regiaoDesc = clubesInfo[clubeSelecionado]!['regiaoDesc']!;
-                  distritoDesc = clubesInfo[clubeSelecionado]!['distritoDesc']!;
-                });
-              }
-              Navigator.pop(context);
-            },
-            child: const Text('Aplicar'),
-          ),
-        ],
-      ),
+        const SizedBox(height: 6),
+        Text(dica, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+        const SizedBox(height: 24),
+      ],
     );
   }
 
@@ -212,62 +177,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
                 const SizedBox(height: 32),
-                const Text(
-                  'Recursos',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    return Wrap(
-                      spacing: 16,
-                      runSpacing: 16,
-                      children: [
-                        SizedBox(
-                          width: constraints.maxWidth / 3 - 16,
-                          child: infoCard(
-                            Icons.attach_money,
-                            'Dinheiro',
-                            'R\$ $dinheiro',
-                          ),
-                        ),
-                        SizedBox(
-                          width: constraints.maxWidth / 3 - 16,
-                          child: infoCard(
-                            Icons.school,
-                            'Inteligência',
-                            inteligencia.toString(),
-                          ),
-                        ),
-                        SizedBox(
-                          width: constraints.maxWidth / 3 - 16,
-                          child: infoCard(
-                            Icons.emoji_emotions,
-                            'Felicidade',
-                            felicidade.toString(),
-                          ),
-                        ),
-                        SizedBox(
-                          width: constraints.maxWidth / 3 - 16,
-                          child: infoCard(
-                            Icons.favorite,
-                            'Saúde',
-                            saude.toString(),
-                          ),
-                        ),
-                        SizedBox(
-                          width: constraints.maxWidth / 3 - 16,
-                          child: infoCard(Icons.star, 'Experiência', '$xp XP'),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-                const SizedBox(height: 32),
+                buildTituloEDica(),
                 Text(
                   'Pontos restantes: $pontosRestantes',
                   style: const TextStyle(color: Colors.white70),
@@ -285,108 +195,147 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget infoCard(IconData icon, String label, String value) {
-    return Card(
-      color: const Color(0xFF6A1B9A),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.white, size: 30),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(value, style: const TextStyle(color: Colors.white70)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget atributoCard(String nome) {
     int nivel = atributos[nome] ?? 0;
     double progresso = nivel / 50;
     bool atingiuLimite = nivel >= 50;
 
-    return Card(
-      color: const Color(0xFF6A1B9A),
-      margin: const EdgeInsets.symmetric(vertical: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              nome,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+    final iconMap = {
+      'Oratória': 'assets/images/public-speaking.png',
+      'Liderança': 'assets/images/leadership.png',
+      'Empatia': 'assets/images/empathy.png',
+      'Organização': 'assets/images/time-management.png',
+    };
+
+    final iconPath = iconMap[nome];
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1E1E2E), Color(0xFF2A004F)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.purpleAccent.withOpacity(0.4),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.purpleAccent.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          if (iconPath != null)
+            Image.asset(iconPath, width: 40, height: 40)
+          else
+            const Icon(
+              Icons.help_outline,
+              color: Colors.purpleAccent,
+              size: 28,
             ),
-            const SizedBox(height: 10),
-            LinearProgressIndicator(
-              value: progresso.clamp(0.0, 1.0),
-              minHeight: 12,
-              backgroundColor: Colors.white24,
-              color: atingiuLimite ? Colors.green : Colors.white,
-            ),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  atingiuLimite ? 'Nível máximo' : 'Nível: $nivel',
-                  style: const TextStyle(color: Colors.white70),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: atingiuLimite ? Colors.grey : Colors.white,
-                    foregroundColor: Colors.black,
+                  '$nome',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
-                  onPressed: (!atingiuLimite && pontosRestantes > 0)
-                      ? () async {
-                          // Cria nova cópia para garantir consistência
-                          final novosAtributos = Map<String, int>.from(
-                            atributos,
-                          );
-                          novosAtributos[nome] = nivel + 1;
-                          final novosPontos = pontosRestantes - 1;
+                ),
+                const SizedBox(height: 6),
+                LinearProgressIndicator(
+                  value: progresso.clamp(0.0, 1.0),
+                  minHeight: 10,
+                  backgroundColor: Colors.white.withOpacity(0.1),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    atingiuLimite ? Colors.green : Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      atingiuLimite ? 'Nível máximo' : 'Nível: $nivel',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: atingiuLimite
+                            ? Colors.grey
+                            : Colors.white,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: (!atingiuLimite && pontosRestantes > 0)
+                          ? () async {
+                              final novosAtributos = Map<String, int>.from(
+                                atributos,
+                              );
+                              novosAtributos[nome] = nivel + 1;
+                              final novosPontos = pontosRestantes - 1;
 
-                          // Salva antes de atualizar a UI
-                          await AtributosStorageFirestore.salvar(
-                            novosAtributos,
-                          );
-                          await AtributosStorageFirestore.salvarPontos(
-                            novosPontos,
-                          );
+                              await AtributosStorageFirestore.salvar(
+                                novosAtributos,
+                              );
+                              await AtributosStorageFirestore.salvarPontos(
+                                novosPontos,
+                              );
+                              if (nome == 'Oratória') {
+                                await FirestoreService.salvarProgressoConquista(
+                                  widget.uid,
+                                  'Fala Bonita!',
+                                  novosAtributos['Oratória']!,
+                                );
+                                if (novosAtributos['Oratória']! >= 50) {
+                                  await FirestoreService.desbloquear(
+                                    widget.uid,
+                                    'Senhor da Oratória',
+                                  );
+                                }
+                                if (novosAtributos['Empatia']! >= 50) {
+                                  await FirestoreService.desbloquear(
+                                    widget.uid,
+                                    'Na pele do outro',
+                                  );
+                                }
+                              }
 
-                          setState(() {
-                            atributos = novosAtributos;
-                            pontosRestantes = novosPontos;
-                          });
-                        }
-                      : null,
-                  child: Text(atingiuLimite ? 'Máx' : 'Evoluir'),
+                              setState(() {
+                                atributos = novosAtributos;
+                                pontosRestantes = novosPontos;
+                              });
+                            }
+                          : null,
+                      child: Text(atingiuLimite ? 'Máx' : 'Evoluir'),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -75,12 +75,14 @@ class AnimatedStoryItem extends StatelessWidget {
 class AnimatedStoryList extends StatefulWidget {
   final List<String> story;
   final GlobalKey<AnimatedListState> listKey;
+  final ScrollController? scrollController;
 
   const AnimatedStoryList({
-    super.key,
+    Key? key,
     required this.story,
     required this.listKey,
-  });
+    this.scrollController, // <-- importante!
+  }) : super(key: key);
 
   @override
   State<AnimatedStoryList> createState() => _AnimatedStoryListState();
@@ -92,7 +94,7 @@ class _AnimatedStoryListState extends State<AnimatedStoryList> {
     final reversed = widget.story;
     return AnimatedList(
       key: widget.listKey,
-      controller: ScrollController(),
+      controller: widget.scrollController,
       padding: const EdgeInsets.symmetric(vertical: 8),
       initialItemCount: reversed.length,
       itemBuilder: (context, index, animation) {

@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:bitleo/services/action_messages.dart';
 import 'package:bitleo/services/firestore_service.dart';
 import 'package:bitleo/widgets/action_card.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ class ActionsScreen extends StatelessWidget {
   final Function(String) onShowInfo;
   final Map<String, int> status;
   final Map<String, int> atributos;
+  final String uid;
 
   const ActionsScreen({
     super.key,
@@ -16,10 +18,11 @@ class ActionsScreen extends StatelessWidget {
     required this.onShowInfo,
     required this.status,
     required this.atributos,
+    required this.uid,
   });
 
   void showInfoDialog(BuildContext context, String title, String description) {
-    FirestoreService.marcarTelaVisitada('actions');
+    FirestoreService.marcarTelaVisitada(uid, 'actions');
     showDialog(
       context: context,
       builder: (context) {
@@ -173,14 +176,16 @@ class ActionsScreen extends StatelessWidget {
     final actions = [
       {
         'label': 'Trabalhar',
+        'tipo': AcaoTipo.Trabalhar,
         'description': 'Ganhe dinheiro, mas fique um pouco mais estressado.',
         'icon': Icons.work,
-        'effects': {'dinheiro': 10, 'felicidade': -3, 'xp': 3},
+        'effects': {'dinheiro': 15, 'felicidade': -3, 'xp': 3, 'saude': -3},
         'info': 'Trabalhar aumenta sua renda, necessário para eventos e ações.',
         'requisitos': {'saude': 30},
       },
       {
         'label': 'Estudar',
+        'tipo': AcaoTipo.Estudar,
         'description': 'Aumente sua inteligência e XP com dedicação.',
         'icon': Icons.school,
         'effects': {'inteligencia': 5, 'felicidade': -2, 'xp': 3},
@@ -189,6 +194,7 @@ class ActionsScreen extends StatelessWidget {
       },
       {
         'label': 'Campanha',
+        'tipo': AcaoTipo.Campanha,
         'description': 'Engaje a comunidade e evolua no clube.',
         'icon': Icons.volunteer_activism,
         'effects': {'felicidade': 5, 'xp': 5, 'dinheiro': -5},
@@ -197,6 +203,7 @@ class ActionsScreen extends StatelessWidget {
       },
       {
         'label': 'Descansar',
+        'tipo': AcaoTipo.Descansar,
         'description': 'Recupere saúde e bem-estar. Todo líder precisa disso!',
         'icon': Icons.bedtime,
         'effects': {'saude': 15, 'felicidade': 20, 'xp': 1},
@@ -204,6 +211,7 @@ class ActionsScreen extends StatelessWidget {
       },
       {
         'label': 'Organizar Evento',
+        'tipo': AcaoTipo.OrganizarEvento,
         'description': 'Mostre sua liderança e ganhe XP.',
         'icon': Icons.event,
         'effects': {'organização': 1, 'xp': 10, 'felicidade': 3},
@@ -212,6 +220,7 @@ class ActionsScreen extends StatelessWidget {
       },
       {
         'label': 'Participar de Reunião',
+        'tipo': AcaoTipo.ParticiparReuniao,
         'description': 'Melhore sua oratória e ganhe experiência.',
         'icon': Icons.groups,
         'effects': {'oratória': 1, 'xp': 3},
@@ -219,6 +228,7 @@ class ActionsScreen extends StatelessWidget {
       },
       {
         'label': 'Mentorar Novato',
+        'tipo': AcaoTipo.MentorarNovato,
         'description': 'Aumente sua empatia e fortaleça o clube.',
         'icon': Icons.support,
         'effects': {'empatia': 1, 'xp': 4, 'felicidade': 4},
@@ -227,19 +237,12 @@ class ActionsScreen extends StatelessWidget {
       },
       {
         'label': 'Redes Sociais',
+        'tipo': AcaoTipo.RedesSociais,
         'description': 'Divulgue ações e mostre seu talento digital.',
         'icon': Icons.share,
         'effects': {'oratória': 1, 'organização': 1, 'xp': 4},
         'info': 'Trabalhar com redes melhora oratória e organização.',
         'requisitos': {'felicidade': 15},
-      },
-      {
-        'label': 'Reunião Distrital',
-        'description': 'Interaja com outros clubes e expanda sua visão.',
-        'icon': Icons.location_city,
-        'effects': {'oratória': 1, 'empatia': 1, 'xp': 5, 'dinheiro': -15},
-        'info': 'Reuniões distritais são ótimas para conexões e XP.',
-        'requisitos': {'empatia': 3, 'felicidade': 20},
       },
     ];
 

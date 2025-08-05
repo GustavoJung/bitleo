@@ -36,6 +36,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   int xpAnteriorParaPontos = 0;
   int acoesDesdeUltimoEvento = 0;
   int totalAcoesDesdeInicioTrimestre = 0;
+  int descansosSeguidos = 0;
+  int diasJogados = 0;
   Set<String> eventosMostradosEsteAno = {};
   Map<String, int> acoesExecutadasEsteAno = {};
   Map<String, int> trimestreEvento = {
@@ -148,6 +150,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       },
     },
   ];
+  final String uid = FirebaseAuth.instance.currentUser!.uid;
 
   @override
   void initState() {
@@ -157,9 +160,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     anoAnterior = anoReal;
 
     () async {
-      await FirestoreService.verificarInicializacao();
+      await FirestoreService.verificarInicializacao(uid);
 
-      final viuTutorial = await FirestoreService.carregarTutorialVisto();
+      final viuTutorial = await FirestoreService.carregarTutorialVisto(uid);
       if (!viuTutorial) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           showTutorial();
@@ -167,12 +170,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       }
 
       final results = await Future.wait([
-        FirestoreService.carregarStatus(),
-        FirestoreService.carregar(),
-        FirestoreService.carregarDistribuicaoInicial(),
-        FirestoreService.carregarPontos(),
-        FirestoreService.carregarUltimoXPParaPontos(),
-        FirestoreService.carregarHistorico(),
+        FirestoreService.carregarStatus(uid),
+        FirestoreService.carregarAtributos(uid),
+        FirestoreService.carregarDistribuicaoInicial(uid),
+        FirestoreService.carregarPontos(uid),
+        FirestoreService.carregarUltimoXPParaPontos(uid),
+        FirestoreService.carregarHistorico(uid),
       ]);
 
       final status = results[0] as Map<String, dynamic>;
@@ -181,15 +184,18 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       final p = results[3] as int;
       final ultimoXP = results[4] as int;
       final historico = results[5] as List<String>;
-      final conquistasSalvas = await FirestoreService.carregarConquistas();
-      final getTotalConquistas =
-          await FirestoreService.conquistasDesbloqueadas();
+      final conquistasSalvas = await FirestoreService.carregarConquistas(uid);
+      final getTotalConquistas = await FirestoreService.conquistasDesbloqueadas(
+        uid,
+      );
       final conquistasResgatadasSalvas =
-          await FirestoreService.conquistasResgatadas();
-      String auxCargo = await FirestoreService.carregarCargo();
-      await FirestoreService.marcarInicioDoJogo();
-      final loadClube = await FirestoreService.getNomeClube();
-
+          await FirestoreService.conquistasResgatadas(uid);
+      String auxCargo = await FirestoreService.carregarCargo(uid);
+      await FirestoreService.marcarInicioDoJogo(uid);
+      final loadClube = await FirestoreService.getNomeClube(uid);
+      final dadosAcoes = await FirestoreService.carregarAcoesExecutadasEsteAno(
+        uid,
+      );
       setState(() {
         dinheiro = status['dinheiro'] ?? dinheiro;
         inteligencia = status['inteligencia'] ?? inteligencia;
@@ -211,6 +217,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         conquistasResgatadas = conquistasResgatadasSalvas;
         totalConquistasLista = getTotalConquistas.length;
         clube = loadClube!;
+        acoesExecutadasEsteAno = Map<String, int>.from(dadosAcoes ?? {});
+        diasJogados = status['diasJogados'] ?? 0;
       });
 
       updateCargo();
@@ -232,7 +240,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     ).animate(_colorController);
 
     _confettiController = ConfettiController(
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 1),
     );
 
     statusControllers = {
@@ -280,20 +288,28 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     };
   }
 
-  void adicionarConquista(String conquista) {
+  Future<void> adicionarConquista(String conquista) async {
+    final conquistasFirebase = await FirestoreService.conquistasDesbloqueadas(
+      uid,
+    );
+
+    // Se já está no Firebase, nem faz nada!
+    if (conquistasFirebase.contains(conquista)) return;
+
+    // Desbloqueia no Firestore e local só uma vez
+    await FirestoreService.desbloquear(uid, conquista);
+
+    setState(() {
+      conquistas.add(conquista);
+      totalConquistasLista++;
+    });
+
     _confettiController.play();
     showAnimatedDialog('🏆 Nova Conquista!', conquista);
-
-    if (!conquistas.contains(conquista)) {
-      setState(() {
-        conquistas.add(conquista);
-        totalConquistasLista++;
-      });
-    }
   }
 
   void salvarDadosStatus() {
-    FirestoreService.salvarStatus({
+    FirestoreService.salvarStatus(uid, {
       'dinheiro': dinheiro,
       'inteligencia': inteligencia,
       'felicidade': felicidade,
@@ -301,6 +317,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       'idade': idade,
       'xp': xp,
       'cargo': cargo,
+      'diasJogados': diasJogados,
     });
   }
 
@@ -353,32 +370,51 @@ $reqText
   }
 
   void showDistribuicaoInicial() {
-    showDialog(
+    showGeneralDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Dialog(
-              backgroundColor: Colors.transparent,
-              insetPadding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 24,
-              ),
+      barrierLabel: 'Distribuição inicial',
+      barrierColor: Colors.black.withOpacity(0.6),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, animation, secondaryAnimation) => const SizedBox(),
+      transitionBuilder: (context, animation, _, __) {
+        final scale = Tween<double>(begin: 0.85, end: 1.0).animate(
+          CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+        );
+        final fade = Tween<double>(
+          begin: 0.0,
+          end: 1.0,
+        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut));
+
+        return FadeTransition(
+          opacity: fade,
+          child: ScaleTransition(
+            scale: scale,
+            child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 400),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(28),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                    child: Container(
+                child: StatefulBuilder(
+                  builder: (context, setModalState) {
+                    return Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF1E1E2E), Color(0xFF2A004F)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                         borderRadius: BorderRadius.circular(28),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.1),
+                          color: Colors.purpleAccent.withOpacity(0.3),
+                          width: 1.5,
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.purpleAccent.withOpacity(0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -386,25 +422,38 @@ $reqText
                           const Icon(
                             Icons.tune,
                             size: 48,
-                            color: Color(0xFFE1BEE7),
+                            color: Colors.amberAccent,
                           ),
                           const SizedBox(height: 12),
                           const Text(
                             'Distribua Seus Pontos',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: Color(0xFFD1B3FF),
+                              color: Colors.amberAccent,
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.none,
                             ),
                           ),
                           const SizedBox(height: 12),
+                          const Text(
+                            'Hora de melhorar personagem. Evolua seus atributos!',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 16,
+                              height: 1.5,
+                              decoration: TextDecoration.none,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
                           Text(
                             'Pontos restantes: $pontosDeAtributo',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 16,
+                              decoration: TextDecoration.none,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -420,6 +469,7 @@ $reqText
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,
+                                      decoration: TextDecoration.none,
                                     ),
                                   ),
                                   IconButton(
@@ -429,7 +479,6 @@ $reqText
                                     ),
                                     onPressed: pontosDeAtributo > 0
                                         ? () {
-                                            // Atualiza modal e estado principal
                                             setModalState(() {
                                               atributos[key] =
                                                   (atributos[key] ?? 0) + 1;
@@ -441,7 +490,7 @@ $reqText
                                 ],
                               ),
                             );
-                          }),
+                          }).toList(),
                           const SizedBox(height: 20),
                           SizedBox(
                             width: double.infinity,
@@ -459,44 +508,222 @@ $reqText
                                 if (pontosDeAtributo > 0) {
                                   final continuar = await showDialog<bool>(
                                     context: context,
-                                    builder: (ctx) => AlertDialog(
-                                      title: const Text('Pontos Restantes'),
-                                      content: Text(
-                                        'Você ainda tem $pontosDeAtributo ponto(s) não distribuído(s).\nDeseja continuar mesmo assim?',
+                                    barrierDismissible: false,
+                                    builder: (ctx) => Dialog(
+                                      backgroundColor: Colors.transparent,
+                                      insetPadding: const EdgeInsets.symmetric(
+                                        horizontal: 24,
+                                        vertical: 24,
                                       ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.of(ctx).pop(false),
-                                          child: const Text('Cancelar'),
+                                      child: Center(
+                                        child: ConstrainedBox(
+                                          constraints: const BoxConstraints(
+                                            maxWidth: 400,
+                                          ), // <<< Limita a largura!
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              28,
+                                            ),
+                                            child: BackdropFilter(
+                                              filter: ImageFilter.blur(
+                                                sigmaX: 16,
+                                                sigmaY: 16,
+                                              ),
+                                              child: Container(
+                                                padding: const EdgeInsets.all(
+                                                  24,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  gradient:
+                                                      const LinearGradient(
+                                                        colors: [
+                                                          Color(0xFF1E1E2E),
+                                                          Color(0xFF2A004F),
+                                                        ],
+                                                        begin:
+                                                            Alignment.topLeft,
+                                                        end: Alignment
+                                                            .bottomRight,
+                                                      ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(28),
+                                                  border: Border.all(
+                                                    color: Colors.purpleAccent
+                                                        .withOpacity(0.3),
+                                                    width: 1.5,
+                                                  ),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.purpleAccent
+                                                          .withOpacity(0.3),
+                                                      blurRadius: 20,
+                                                      offset: const Offset(
+                                                        0,
+                                                        8,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    const Icon(
+                                                      Icons
+                                                          .warning_amber_rounded,
+                                                      size: 44,
+                                                      color: Colors.amberAccent,
+                                                    ),
+                                                    const SizedBox(height: 12),
+                                                    const Text(
+                                                      'Pontos Restantes',
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: TextStyle(
+                                                        color:
+                                                            Colors.amberAccent,
+                                                        fontSize: 22,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        decoration:
+                                                            TextDecoration.none,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 10),
+                                                    Text(
+                                                      'Você ainda tem $pontosDeAtributo ponto(s) não distribuído(s).\nQuer continuar assim mesmo?',
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: const TextStyle(
+                                                        color: Colors.white70,
+                                                        fontSize: 16,
+                                                        height: 1.5,
+                                                        decoration:
+                                                            TextDecoration.none,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 24),
+                                                    Row(
+                                                      children: [
+                                                        Expanded(
+                                                          child: TextButton(
+                                                            onPressed: () =>
+                                                                Navigator.pop(
+                                                                  ctx,
+                                                                  false,
+                                                                ),
+                                                            child: const Text(
+                                                              'Cancelar',
+                                                              style: TextStyle(
+                                                                color: Colors
+                                                                    .white70,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                fontSize: 16,
+                                                                decoration:
+                                                                    TextDecoration
+                                                                        .none,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                          width: 16,
+                                                        ),
+                                                        Expanded(
+                                                          child: ElevatedButton(
+                                                            style: ElevatedButton.styleFrom(
+                                                              backgroundColor:
+                                                                  const Color(
+                                                                    0xFF6A1B9A,
+                                                                  ),
+                                                              shape: RoundedRectangleBorder(
+                                                                borderRadius:
+                                                                    BorderRadius.circular(
+                                                                      24,
+                                                                    ),
+                                                              ),
+                                                              padding:
+                                                                  const EdgeInsets.symmetric(
+                                                                    vertical:
+                                                                        12,
+                                                                  ),
+                                                            ),
+                                                            onPressed: () =>
+                                                                Navigator.pop(
+                                                                  ctx,
+                                                                  true,
+                                                                ),
+                                                            child: const Text(
+                                                              'Confirmar',
+                                                              style: TextStyle(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                fontSize: 16,
+                                                                decoration:
+                                                                    TextDecoration
+                                                                        .none,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
                                         ),
-                                        ElevatedButton(
-                                          onPressed: () =>
-                                              Navigator.of(ctx).pop(true),
-                                          child: const Text('Confirmar'),
-                                        ),
-                                      ],
+                                      ),
                                     ),
                                   );
                                   if (continuar != true) return;
                                 }
                                 if (!dadosCarregados) return;
                                 Navigator.of(context).pop();
-
-                                await FirestoreService.salvar(atributos);
+                                await FirestoreService.salvarProgressoConquista(
+                                  uid,
+                                  'Fala Bonita!',
+                                  atributos['Oratória']!,
+                                );
+                                await FirestoreService.salvarAtributos(
+                                  uid,
+                                  atributos,
+                                );
                                 await FirestoreService.salvarPontos(
+                                  uid,
                                   pontosDeAtributo,
                                 );
                                 await FirestoreService.salvarDistribuicaoInicial(
+                                  uid,
                                   true,
                                 );
+                                final conquistasAntes =
+                                    await FirestoreService.conquistasDesbloqueadas(
+                                      uid,
+                                    );
                                 await FirestoreService.desbloquear(
+                                  uid,
                                   "Estrategista",
                                 );
-                                adicionarConquista("Estrategista");
-                                adicionarAoFeed(
-                                  "Nova conquista desbloqueada: Estrategista! 🎉",
-                                );
+                                final conquistasDepois =
+                                    await FirestoreService.conquistasDesbloqueadas(
+                                      uid,
+                                    );
+
+                                for (final nome in conquistasDepois.difference(
+                                  conquistasAntes,
+                                )) {
+                                  adicionarConquista(nome);
+                                  adicionarAoFeed(
+                                    "Conquista desbloqueada: $nome 🎉",
+                                  );
+                                }
                                 setState(() {
                                   distribuiuPontosIniciais = true;
                                 });
@@ -506,18 +733,19 @@ $reqText
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
+                                  decoration: TextDecoration.none,
                                 ),
                               ),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ),
-            );
-          },
+            ),
+          ),
         );
       },
     );
@@ -640,23 +868,32 @@ $reqText
   }
 
   void checkEventoTrimestral() {
-    final int minimoAcoesEntreEventos = 3;
-    final trimestreAtual = ((idade * 100).floor() % 100) ~/ 20 + 1;
+    final int diasNoAno = 365;
+    final List<String> eventosEspeciais = [
+      'EventoEspecialJALC',
+      'EventoEspecialSEDEL',
+      'EventoEspecialACAMPALEO',
+      'EventoEspecialEncontrodeRegiao',
+      'EventoEspecialCONFE',
+    ];
+    int eventosNoAno = eventosEspeciais.length;
+    int tamanhoFatia = (diasNoAno / eventosNoAno).floor();
 
-    if (eventoDoTrimestreJaMostrado[trimestreAtual] == true ||
-        totalAcoesDesdeInicioTrimestre < minimoAcoesEntreEventos) {
-      return;
-    }
+    int diaDoAno = (diasJogados % diasNoAno) + 1;
 
-    for (var evento in trimestreEvento.keys) {
-      if (trimestreEvento[evento] == trimestreAtual &&
-          !eventosMostradosPorTrimestre[trimestreAtual]!.contains(evento)) {
-        eventosMostradosEsteAno.add(evento);
-        eventosMostradosPorTrimestre[trimestreAtual]!.add(evento);
-        ultimaOcorrenciaEvento[evento] = idade;
-        eventoDoTrimestreJaMostrado[trimestreAtual] = true;
-        showEventoEspecial(evento, contaComoAcao: false);
-        break;
+    for (int i = 0; i < eventosNoAno; i++) {
+      int inicioJanela = i * tamanhoFatia + 1;
+      int fimJanela = (i == eventosNoAno - 1)
+          ? diasNoAno
+          : inicioJanela + tamanhoFatia - 1;
+
+      // Só mostra se o evento não foi mostrado ainda esse ano, e está dentro da janela dele
+      if (diaDoAno >= inicioJanela &&
+          diaDoAno <= fimJanela &&
+          !eventosMostradosEsteAno.contains(eventosEspeciais[i])) {
+        eventosMostradosEsteAno.add(eventosEspeciais[i]);
+        showEventoEspecial(eventosEspeciais[i], contaComoAcao: false);
+        break; // Só mostra UM por chamada
       }
     }
   }
@@ -667,13 +904,14 @@ $reqText
       _listKey.currentState?.insertItem(0);
     });
     await Future.delayed(const Duration(milliseconds: 100));
-    await FirestoreService.salvarHistorico(story);
+    await FirestoreService.salvarHistorico(uid, story);
   }
 
   void applyChanges(AcaoTipo tipo, Map<String, dynamic> selected) async {
     if (!dadosCarregados || isProcessing) return;
     setState(() => isProcessing = true);
 
+    final conquistasAntes = await FirestoreService.conquistasDesbloqueadas(uid);
     final identificador = '${tipo.name}_${selected['nome']}';
     final ultimaAcao = await LocalCooldownStorage.carregarUltimaAcao();
 
@@ -747,16 +985,6 @@ $reqText
     }
 
     int gasto = ((selected['dinheiro'] ?? 0) as num).toInt();
-
-    if (dinheiro + gasto < 0) {
-      adicionarAoFeed(
-        "$anoAtual: Quis participar, mas não tinha dinheiro suficiente para a ação.",
-      );
-      await FirestoreService.salvarHistorico(story);
-      setState(() => isProcessing = false);
-      return;
-    }
-
     final pontos = ((selected['xp'] ?? 0) as num).toInt();
     xp += pontos;
 
@@ -765,59 +993,149 @@ $reqText
       pontosDeAtributo += ganho;
       xpAnteriorParaPontos += ganho * 15;
       triggerStatusAnim('atributos');
-      FirestoreService.salvarUltimoXPParaPontos(xpAnteriorParaPontos);
+      FirestoreService.salvarUltimoXPParaPontos(uid, xpAnteriorParaPontos);
     }
 
-    FirestoreService.salvar(atributos);
-    FirestoreService.salvarPontos(pontosDeAtributo);
+    FirestoreService.salvarAtributos(uid, atributos);
+    FirestoreService.salvarPontos(uid, pontosDeAtributo);
+
+    final acaoNome = tipo.name;
+    acoesExecutadasEsteAno[acaoNome] =
+        (acoesExecutadasEsteAno[acaoNome] ?? 0) + 1;
+
+    await FirestoreService.salvarAcoesExecutadasEsteAno(
+      uid,
+      acoesExecutadasEsteAno,
+    );
 
     dinheiro += gasto;
     final intel = ((selected['inteligencia'] ?? 0) as num).toInt();
     inteligencia += intel;
+    inteligencia = inteligencia.clamp(0, 100);
     final feliz = ((selected['felicidade'] ?? 0) as num).toInt();
     felicidade += feliz;
+    felicidade = felicidade.clamp(0, 100);
     final vida = ((selected['saude'] ?? 0) as num).toInt();
     saude += vida;
-    idade += 0.01;
+    saude = saude.clamp(0, 100);
 
-    bool contaComoAcao = selected['contaComoAcao'] ?? true;
-    if (contaComoAcao) {
-      acoesDesdeUltimoEvento++;
-      totalAcoesDesdeInicioTrimestre++;
+    const int diasPorAcao = 5; // ou o valor que quiser
+    diasJogados += diasPorAcao;
+    atualizarAnoPorDias();
+
+    if (saude <= 0) {
+      await FirestoreService.desbloquear(uid, 'Zé Ruela');
+    }
+    if (dinheiro < 0) {
+      await FirestoreService.desbloquear(uid, 'Endividado');
+    }
+    if (felicidade < 0) {
+      await FirestoreService.desbloquear(uid, 'Detestado');
+    }
+    await FirestoreService.salvarProgressoConquista(
+      uid,
+      'Começando a Jornada',
+      xp,
+    );
+    await FirestoreService.salvarProgressoConquista(
+      uid,
+      'Primeiro Passo de Liderança',
+      xp,
+    );
+    await FirestoreService.salvarProgressoConquista(
+      uid,
+      'Ativo no clube',
+      totalAcoesDesdeInicioTrimestre,
+    );
+    await FirestoreService.salvarProgressoConquista(uid, 'Cura Total', saude);
+
+    switch (tipo) {
+      case AcaoTipo.Trabalhar:
+        await FirestoreService.incrementarProgressoConquista(uid, 'Workaholic');
+        break;
+      case AcaoTipo.Estudar:
+        await FirestoreService.incrementarProgressoConquista(
+          uid,
+          'Estudante Aplicado',
+        );
+        break;
+      case AcaoTipo.Campanha:
+        await FirestoreService.incrementarProgressoConquista(
+          uid,
+          'Campeão de Campanha',
+        );
+        break;
+      case AcaoTipo.OrganizarEvento:
+        await FirestoreService.incrementarProgressoConquista(
+          uid,
+          'Organizador Profissional',
+        );
+        break;
+      case AcaoTipo.ParticiparReuniao:
+        await FirestoreService.incrementarProgressoConquista(
+          uid,
+          'Amigo de Todos',
+        );
+        break;
+      case AcaoTipo.MentorarNovato:
+        await FirestoreService.incrementarProgressoConquista(
+          uid,
+          'Mentor Sênior',
+        );
+        // Aqui pode desbloquear também a "Mentorando Novos LEOs" se for a primeira vez
+        break;
+      case AcaoTipo.RedesSociais:
+        await FirestoreService.incrementarProgressoConquista(uid, 'Influencer');
+        break;
+      case AcaoTipo.ReuniaoDistrital:
+        await FirestoreService.incrementarProgressoConquista(
+          uid,
+          'Amigo de Todos',
+        );
+        break;
+      default:
+        break;
     }
 
-    FirestoreService.salvarStatus({
-      'dinheiro': dinheiro,
-      'inteligencia': inteligencia,
-      'felicidade': felicidade,
-      'saude': saude,
-      'xp': xp,
-      'idade': idade,
-      'cargo': cargo,
-    });
+    acoesDesdeUltimoEvento++;
+    totalAcoesDesdeInicioTrimestre++;
+    await FirestoreService.incrementarProgressoConquista(uid, 'Ativo no clube');
+    salvarDadosStatus();
 
-    atualizarAno();
     await adicionarAoFeed(
       "$anoAtual: ${ActionMessageHelper.getRandomMessage(tipo)}",
     );
 
-    final conquistasAntes = await FirestoreService.conquistasDesbloqueadas();
-
     // checagem das conquistas
     await FirestoreService.checarDesbloqueios(
+      uid: uid,
       xp: xp,
       acoes: totalAcoesDesdeInicioTrimestre,
       oratoria: atributos['Oratória'],
       saude: saude,
       felicidadeAlta: felicidade > 80 ? 5 : 0,
       pontosDistribuidos: distribuiuPontosIniciais && pontosDeAtributo == 0,
-      turnosJogando: ((idade - 18) * 100).floor(),
+      empatia: atributos['Empatia'],
+      lideranca: atributos['Liderança'],
+      organizacao: atributos['Organização'],
+      inteligencia: inteligencia,
+      campanhas: acoesExecutadasEsteAno['Campanha'] ?? 0,
+      estudou: acoesExecutadasEsteAno['Estudar'] ?? 0,
+      trabalhou: acoesExecutadasEsteAno['Trabalhar'] ?? 0,
+      mentorou: acoesExecutadasEsteAno['Mentorar Novato'] ?? 0,
+      eventosOrganizados: acoesExecutadasEsteAno['Organizar Evento'] ?? 0,
+      reunioesParticipadas:
+          acoesExecutadasEsteAno['Participar de Reunião'] ?? 0,
+      redesSociais: acoesExecutadasEsteAno['Redes Sociais'] ?? 0,
+      reunioesDistritais: acoesExecutadasEsteAno['Reunião Distrital'] ?? 0,
     );
 
-    final conquistasDepois = await FirestoreService.conquistasDesbloqueadas();
+    final conquistasDepois = await FirestoreService.conquistasDesbloqueadas(
+      uid,
+    );
 
     for (final nome in conquistasDepois.difference(conquistasAntes)) {
-      adicionarConquista(nome);
+      adicionarConquista(nome); // Sua função já evita duplicação local
       adicionarAoFeed("$anoAtual: Conquista desbloqueada: $nome 🎉");
     }
     setState(() {
@@ -825,10 +1143,32 @@ $reqText
       if (intel != 0) triggerStatusAnim('inteligencia');
       if (feliz != 0) triggerStatusAnim('felicidade');
       if (vida != 0) triggerStatusAnim('saude');
+      conquistas = conquistasDepois.toList();
       checkEventoTrimestral();
       updateCargo();
       isProcessing = false;
     });
+  }
+
+  void atualizarAnoPorDias() {
+    final int anoInicial = DateTime.now().year;
+    final int diasNoAno = 365; // pode ser mais chique e usar 366 se quiser kkk
+
+    int anosPassados = diasJogados ~/ diasNoAno;
+    int diaDoAno = (diasJogados % diasNoAno) + 1; // 1 a 365
+
+    anoAtual = anoInicial + anosPassados;
+    // Se quiser, exibe o dia também!
+    print("Hoje é dia $diaDoAno de $anoAtual");
+    // Aqui pode limpar coisas quando muda de ano, se precisar
+    if (anoAtual != anoAnterior) {
+      anoAnterior = anoAtual;
+      eventosMostradosEsteAno.clear();
+      acoesExecutadasEsteAno.clear();
+      eventoDoTrimestreJaMostrado.updateAll((_, __) => false);
+      eventosMostradosPorTrimestre.updateAll((_, __) => {});
+      totalAcoesDesdeInicioTrimestre = 0;
+    }
   }
 
   void triggerStatusAnim(String statusKey) {
@@ -882,95 +1222,111 @@ $reqText
             horizontal: 24,
             vertical: 24,
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(28),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: Colors.white.withOpacity(0.1)),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(icon, size: 48, color: const Color(0xFFE1BEE7)),
-                    const SizedBox(height: 12),
-                    Text(
-                      title,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Color(0xFFD1B3FF),
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: 450,
+              ), // 👈 Largura máxima aqui
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(28),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(color: Colors.white.withOpacity(0.1)),
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      description,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 16,
-                      ),
-                    ),
-                    if (secondaryText != null) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        secondaryText,
-                        textAlign: TextAlign.left,
-                        style: const TextStyle(
-                          color: Colors.white54,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (secondaryButtonText != null)
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              if (onSecondaryPressed != null) {
-                                onSecondaryPressed();
-                              }
-                            },
-                            child: Text(
-                              secondaryButtonText,
-                              style: const TextStyle(color: Colors.redAccent),
+                        Icon(icon, size: 48, color: const Color(0xFFE1BEE7)),
+                        const SizedBox(height: 12),
+                        Text(
+                          title,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Color(0xFFD1B3FF),
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            decoration: TextDecoration.none,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          description,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 16,
+                            decoration: TextDecoration.none,
+                          ),
+                        ),
+                        if (secondaryText != null) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            secondaryText,
+                            textAlign: TextAlign.left,
+                            style: const TextStyle(
+                              color: Colors.white54,
+                              fontSize: 14,
+                              decoration: TextDecoration.none,
                             ),
                           ),
-                        Expanded(
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF6A1B9A),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
+                        ],
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            if (secondaryButtonText != null)
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  if (onSecondaryPressed != null) {
+                                    onSecondaryPressed();
+                                  }
+                                },
+                                child: Text(
+                                  secondaryButtonText,
+                                  style: const TextStyle(
+                                    color: Colors.redAccent,
+                                    decoration: TextDecoration.none,
+                                  ),
+                                ),
                               ),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                            ),
-                            onPressed: () {
-                              Navigator.pop(context);
-                              if (onPrimaryPressed != null) {
-                                onPrimaryPressed();
-                              }
-                            },
-                            child: Text(
-                              primaryButtonText,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                            Expanded(
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF6A1B9A),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                ),
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  if (onPrimaryPressed != null) {
+                                    onPrimaryPressed();
+                                  }
+                                },
+                                child: Text(
+                                  primaryButtonText,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    decoration: TextDecoration.none,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -1080,16 +1436,16 @@ $reqText
       secondaryText:
           '📈 XP atual: $xp / Requerido: $xpNecessario\n\nRequisitos:\n$requisitosTexto',
       primaryButtonText: 'Aceitar',
-      onPrimaryPressed: () {
-        setState(() async {
+      onPrimaryPressed: () async {
+        setState(() {
           cargo = novoCargo;
-          await FirestoreService.salvarCargo(novoCargo);
-          adicionarConquista("Se tornou $cargo");
-          adicionarAoFeed(
-            "$anoAtual: Aceitou o desafio e assumiu o cargo de $cargo com entusiasmo.",
-          );
-          _confettiController.play();
         });
+        await FirestoreService.salvarCargo(uid, novoCargo);
+        adicionarConquista("Se tornou $novoCargo");
+        await adicionarAoFeed(
+          "$anoAtual: Aceitou o desafio e assumiu o cargo de $novoCargo com entusiasmo.",
+        );
+        _confettiController.play();
       },
       secondaryButtonText: 'Recusar',
       onSecondaryPressed: () {
@@ -1234,25 +1590,57 @@ $reqText
     );
   }
 
+  String padronizarNomeEvento(String nomeEvento) {
+    if (!nomeEvento.startsWith('EventoEspecial')) {
+      return 'EventoEspecial${nomeEvento.replaceAll(' ', '')}';
+    }
+    return nomeEvento.replaceAll(' ', '');
+  }
+
   void showEventoEspecial(String nomeEvento, {bool contaComoAcao = true}) {
-    final Map<String, String> descricoesEventos = {
-      'EventoEspecialJALC':
-          'Jornada de Aprendizado e Liderança do Clube. Um dos maiores eventos de formação.',
-      'EventoEspecialSEDEL':
-          'Seminário de Desenvolvimento de Lideranças. Fortaleça competências e valores.',
-      'EventoEspecialACAMPALEO':
-          'Acampamento LEO de integração com outros clubes.',
-      'EventoEspecialEncontro de Região':
-          'Reunião entre clubes da região para alinhar projetos.',
-      'EventoEspecialCONFE':
-          'Conferência Final. Celebração anual dos resultados.',
+    // Mapa com nomes bonitinhos e descrições dos eventos
+    final Map<String, Map<String, String>> eventosDetalhes = {
+      'EventoEspecialJALC': {
+        'titulo': 'JALC',
+        'descricao':
+            'Jogos Anuais de LEO Clube. Evento esportivo com disputa sadia e novas amizades.',
+      },
+      'EventoEspecialSEDEL': {
+        'titulo': 'SEDEL',
+        'descricao':
+            'Seminário de Desenvolvimento de Lideranças. Fortaleça competências e valores.',
+      },
+      'EventoEspecialACAMPALEO': {
+        'titulo': 'ACAMPALEO',
+        'descricao': 'Acampamento LEO de integração com outros clubes.',
+      },
+      'EventoEspecialEncontrodeRegião': {
+        'titulo': 'Encontro de Região',
+        'descricao':
+            'Reunião entre clubes da região com disputas artísticas e definições de eventos.',
+      },
+      'EventoEspecialCONFE': {
+        'titulo': 'CONFE',
+        'descricao':
+            'Conferência anual. Celebração dos resultados e premiações.',
+      },
     };
+    final nomeEventoPadrao = padronizarNomeEvento(nomeEvento);
+    Map<String, String>? detalhesEvento;
+    for (var key in eventosDetalhes.keys) {
+      if (key.toLowerCase().replaceAll(' ', '') ==
+          nomeEventoPadrao.toLowerCase().replaceAll(' ', '')) {
+        detalhesEvento = eventosDetalhes[key];
+        break;
+      }
+    }
+    final evento =
+        detalhesEvento ??
+        {'titulo': nomeEventoPadrao, 'descricao': 'Evento especial do clube.'};
 
-    final descricao =
-        descricoesEventos[nomeEvento] ?? 'Evento especial do clube.';
-
+    // Pega o tipo do evento na enum
     AcaoTipo tipoEvento = AcaoTipo.values.firstWhere(
-      (e) => e.name == 'EventoEspecial${nomeEvento.replaceAll(' ', '')}',
+      (e) => e.name == nomeEventoPadrao,
       orElse: () => AcaoTipo.Campanha,
     );
 
@@ -1269,9 +1657,7 @@ $reqText
             vertical: 24,
           ),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: 400, // 👈 Máximo 400px de largura
-            ),
+            constraints: const BoxConstraints(maxWidth: 400),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(28),
               child: BackdropFilter(
@@ -1293,7 +1679,7 @@ $reqText
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Evento Especial',
+                        evento['titulo'] ?? 'Evento Especial',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           color: Color(0xFFD1B3FF),
@@ -1303,7 +1689,7 @@ $reqText
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        descricao,
+                        evento['descricao'] ?? '',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           color: Colors.white70,
@@ -1324,7 +1710,7 @@ $reqText
                             onPressed: () {
                               Navigator.pop(context);
                               adicionarAoFeed(
-                                "$anoAtual: Recusou o evento $nomeEvento.",
+                                "$anoAtual: Recusou o evento ${evento['titulo']}.",
                               );
                             },
                             child: const Text(
@@ -1343,14 +1729,27 @@ $reqText
                                 horizontal: 20,
                               ),
                             ),
-                            onPressed: () {
+                            onPressed: () async {
                               Navigator.pop(context);
-                              applyChanges(tipoEvento, {
-                                'xp': 15,
-                                'felicidade': 10,
-                                'dinheiro': -30,
-                                'contaComoAcao': contaComoAcao,
-                              });
+                              if (dinheiro < 30) {
+                                adicionarAoFeed(
+                                  "$anoAtual: Você participou do evento, mas não tinha dinheiro e agora ficou devendo! Ganhou metade das recompensas.",
+                                );
+
+                                applyChanges(tipoEvento, {
+                                  'xp': 7,
+                                  'felicidade': 5,
+                                  'dinheiro': -30,
+                                  'contaComoAcao': contaComoAcao,
+                                });
+                              } else {
+                                applyChanges(tipoEvento, {
+                                  'xp': 15,
+                                  'felicidade': 10,
+                                  'dinheiro': -30,
+                                  'contaComoAcao': contaComoAcao,
+                                });
+                              }
                             },
                             child: const Text(
                               'Participar',
@@ -1370,61 +1769,82 @@ $reqText
     );
   }
 
-  void showTutorial() {
+  Future<void> showTutorial() async {
     final List<Map<String, String>> paginas = [
       {
-        'titulo': 'Bem-vindo!',
-        'texto': 'Aqui você acompanha sua jornada dentro do LEO Clube.',
-      },
-      {
-        'titulo': 'Escolher Ação',
+        'titulo': 'Bem-vindo(a) ao Jogo!',
         'texto':
-            'Toque em "Nova Ação" no botão flutuante para avançar e viver novas experiências!',
+            'Prepare-se para entrar na vida LEO Clube e conhecer alguns aspectos desse movimento que muda nossas vidas! ',
       },
       {
-        'titulo': 'Status',
-        'texto': 'Seus atributos aumentam conforme suas ações. Fique de olho!',
-      },
-      {
-        'titulo': 'Distribua Pontos',
+        'titulo': 'Como jogar',
         'texto':
-            'Toque no botão de perfil quando tiver pontos disponíveis para evoluir seus atributos.',
+            'Toque em "Nova atividade" pra começar a sua saga. Cada ação vale tempo e pode mudar seus atributos. Escolha com sabedoria… ou só vai clicando mesmo, ninguém vai te julgar (mentira, vai sim).',
+      },
+      {
+        'titulo': 'Atributos e Status',
+        'texto':
+            'Fique de olho em dinheiro, inteligência, felicidade e saúde. Se um deles zerar, vai passar vergonha no clube… ou pior, perde o jogo!',
+      },
+      {
+        'titulo': 'Distribua seus Pontos!',
+        'texto':
+            'Quando você ganhar pontos de atributo, o ícone de perfil vai aparecer com um badge. Clique lá e distribua seus pontinhos. É tipo montar personagem em RPG, só que ninguém vai te chamar de nerd (só eu, talvez).',
       },
       {
         'titulo': 'Conquistas',
-        'texto': 'Desbloqueie marcos e veja tudo o que já conquistou!',
+        'texto':
+            'Desbloqueie conquistas fazendo coisas legais. Se conseguir todas, me avisa pra eu te dar parabéns — ou pelo menos um emoji de foguinho. 🚀',
       },
     ];
 
     int currentIndex = 0;
 
-    showDialog(
+    showGeneralDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            final page = paginas[currentIndex];
-            return Dialog(
-              backgroundColor: Colors.transparent,
-              insetPadding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 24,
-              ),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 400),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(28),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+      barrierLabel: 'Tutorial',
+      barrierColor: Colors.black.withOpacity(0.6),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, animation, secondaryAnimation) => const SizedBox(),
+      transitionBuilder: (context, animation, _, __) {
+        final fade = Tween<double>(begin: 0, end: 1).animate(animation);
+        final scale = Tween<double>(begin: 0.9, end: 1.0).animate(
+          CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+        );
+
+        return FadeTransition(
+          opacity: fade,
+          child: ScaleTransition(
+            scale: scale,
+            child: Center(
+              child: StatefulBuilder(
+                builder: (context, setModalState) {
+                  final page = paginas[currentIndex];
+                  final total = paginas.length;
+
+                  return ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 400),
                     child: Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF1E1E2E), Color(0xFF2A004F)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                         borderRadius: BorderRadius.circular(28),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.1),
+                          color: Colors.purpleAccent.withOpacity(0.4),
+                          width: 1.5,
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.purpleAccent.withOpacity(0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -1432,16 +1852,18 @@ $reqText
                           const Icon(
                             Icons.school,
                             size: 48,
-                            color: Color(0xFFE1BEE7),
+                            color: Colors.amberAccent,
                           ),
                           const SizedBox(height: 12),
                           Text(
                             page['titulo']!,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
-                              color: Color(0xFFD1B3FF),
+                              color: Colors.amberAccent,
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
+                              decoration:
+                                  TextDecoration.none, // SEM sublinhado!
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -1451,9 +1873,21 @@ $reqText
                             style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 16,
+                              height: 1.5,
+                              decoration:
+                                  TextDecoration.none, // SEM sublinhado!
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 20),
+                          Text(
+                            'Passo ${currentIndex + 1} de $total',
+                            style: const TextStyle(
+                              color: Colors.white38,
+                              fontSize: 13,
+                              decoration: TextDecoration.none,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
@@ -1474,9 +1908,9 @@ $reqText
                                 } else {
                                   Navigator.pop(context);
                                   await FirestoreService.salvarTutorialVisto(
+                                    uid,
                                     true,
                                   );
-
                                   await Future.delayed(
                                     const Duration(milliseconds: 100),
                                   );
@@ -1490,6 +1924,7 @@ $reqText
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
+                                  decoration: TextDecoration.none,
                                 ),
                               ),
                             ),
@@ -1497,13 +1932,36 @@ $reqText
                         ],
                       ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
-            );
-          },
+            ),
+          ),
         );
       },
+    );
+    await FirestoreService.salvarProgressoConquista(uid, 'Cura Total', saude);
+    await FirestoreService.checarDesbloqueios(
+      uid: uid,
+      xp: xp,
+      acoes: totalAcoesDesdeInicioTrimestre,
+      oratoria: atributos['Oratória'],
+      saude: saude,
+      felicidadeAlta: felicidade > 80 ? 5 : 0,
+      pontosDistribuidos: distribuiuPontosIniciais && pontosDeAtributo == 0,
+      empatia: atributos['Empatia'],
+      lideranca: atributos['Liderança'],
+      organizacao: atributos['Organização'],
+      inteligencia: inteligencia,
+      campanhas: acoesExecutadasEsteAno['Campanha'] ?? 0,
+      estudou: acoesExecutadasEsteAno['Estudar'] ?? 0,
+      trabalhou: acoesExecutadasEsteAno['Trabalhar'] ?? 0,
+      mentorou: acoesExecutadasEsteAno['Mentorar Novato'] ?? 0,
+      eventosOrganizados: acoesExecutadasEsteAno['Organizar Evento'] ?? 0,
+      reunioesParticipadas:
+          acoesExecutadasEsteAno['Participar de Reunião'] ?? 0,
+      redesSociais: acoesExecutadasEsteAno['Redes Sociais'] ?? 0,
+      reunioesDistritais: acoesExecutadasEsteAno['Reunião Distrital'] ?? 0,
     );
   }
 
@@ -1553,7 +2011,6 @@ $reqText
                 color: Colors.green,
               ),
               value: dinheiro,
-              maxValue: 100,
             ),
           ),
           Tooltip(
@@ -1597,7 +2054,6 @@ $reqText
               color: Colors.purple,
               icon: const Icon(Icons.star, size: 22, color: Colors.purple),
               value: xp,
-              maxValue: 50,
             ),
           ),
         ],
@@ -1613,8 +2069,11 @@ $reqText
     int? value,
     int? maxValue,
     String? labelText,
+    bool forceNoBar = false,
   }) {
-    final hasBar = maxValue != null && value != null;
+    final isXpOrDinheiro = keyName == 'xp' || keyName == 'dinheiro';
+    final hasBar =
+        !isXpOrDinheiro && maxValue != null && value != null && !forceNoBar;
     final percentage = hasBar ? (value! / maxValue!).clamp(0.0, 1.0) : 0.0;
     final isAnimating = animatingStatus.contains(keyName);
 
@@ -1652,7 +2111,11 @@ $reqText
                   valueColor: AlwaysStoppedAnimation<Color>(color),
                 ),
               )
-            else if (labelText != null)
+            else
+              // Espaço reservado para deixar igual a altura dos outros
+              SizedBox(height: 8),
+            const SizedBox(height: 6),
+            if (labelText != null)
               Text(
                 labelText,
                 textAlign: TextAlign.center,
@@ -1756,7 +2219,7 @@ $reqText
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 4),
+
             Text(
               'Você já atingiu o cargo máximo!',
               style: TextStyle(color: Colors.white70, fontSize: 12),
@@ -1777,6 +2240,8 @@ $reqText
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          SizedBox(height: 8),
+
           Text(
             'Objetivo Atual: $nome',
             style: const TextStyle(
@@ -1785,18 +2250,21 @@ $reqText
               fontWeight: FontWeight.bold,
             ),
           ),
+          SizedBox(height: 8),
+          SizedBox(height: 8),
           const SizedBox(height: 8),
           Text(
             'XP necessário: $xpNecessario (atual: $xp)',
             style: const TextStyle(color: Colors.white70, fontSize: 14),
           ),
-          const SizedBox(height: 4),
+
           ...requisitos.entries.map(
             (e) => Text(
               '${e.key}: ${atributos[e.key] ?? 0}/${e.value}',
               style: const TextStyle(color: Colors.white70, fontSize: 14),
             ),
           ),
+          const SizedBox(height: 8),
         ],
       ),
     );
@@ -1840,8 +2308,31 @@ $reqText
   }
 
   Future<String> getUserCargo() async {
-    String userCargo = await FirestoreService.carregarCargo();
+    String userCargo = await FirestoreService.carregarCargo(uid);
     return userCargo;
+  }
+
+  AcaoTipo getTipoFromLabel(String label) {
+    switch (label) {
+      case 'Trabalhar':
+        return AcaoTipo.Trabalhar;
+      case 'Estudar':
+        return AcaoTipo.Estudar;
+      case 'Campanha':
+        return AcaoTipo.Campanha;
+      case 'Descansar':
+        return AcaoTipo.Descansar;
+      case 'Organizar Evento':
+        return AcaoTipo.OrganizarEvento;
+      case 'Participar de Reunião':
+        return AcaoTipo.ParticiparReuniao;
+      case 'Mentorar Novato':
+        return AcaoTipo.MentorarNovato;
+      case 'Redes Sociais':
+        return AcaoTipo.RedesSociais;
+      default:
+        return AcaoTipo.Trabalhar; // Fallback pra não explodir!
+    }
   }
 
   @override
@@ -1865,6 +2356,7 @@ $reqText
                     userCargo: cargo,
                     nome: widget.nome,
                     clube: clube,
+                    uid: uid,
                   ),
                   transitionsBuilder: (_, animation, __, child) {
                     final tween = Tween(
@@ -1878,8 +2370,10 @@ $reqText
                   },
                 ),
               ).then((_) async {
-                final novosAtributos = await FirestoreService.carregar();
-                final novosPontos = await FirestoreService.carregarPontos();
+                final novosAtributos = await FirestoreService.carregarAtributos(
+                  uid,
+                );
+                final novosPontos = await FirestoreService.carregarPontos(uid);
                 setState(() {
                   atributos = novosAtributos;
                   pontosDeAtributo = novosPontos;
@@ -1898,11 +2392,11 @@ $reqText
                 MaterialPageRoute(builder: (_) => ConquistasScreen()),
               );
               if (resultado == true) {
-                final novosPontos = await FirestoreService.carregarPontos();
+                final novosPontos = await FirestoreService.carregarPontos(uid);
                 final conquistasAtualizadas =
-                    await FirestoreService.conquistasDesbloqueadas();
+                    await FirestoreService.conquistasDesbloqueadas(uid);
                 final conquistasResgatadasAtualizadas =
-                    await FirestoreService.conquistasResgatadas();
+                    await FirestoreService.conquistasResgatadas(uid);
                 setState(() {
                   pontosDeAtributo = novosPontos;
                   totalConquistasLista = conquistasAtualizadas.length;
@@ -1957,10 +2451,7 @@ $reqText
             context,
             ActionsScreen(
               onActionSelected: (effects, label) {
-                final tipo = AcaoTipo.values.firstWhere(
-                  (e) => e.name == label.replaceAll(' ', ''),
-                  orElse: () => AcaoTipo.Trabalhar,
-                );
+                final tipo = getTipoFromLabel(label as String);
                 applyChanges(tipo, effects);
               },
               onShowInfo: (info) => showDialogMessage('Informações', info),
@@ -1972,6 +2463,7 @@ $reqText
                 'xp': xp,
               },
               atributos: atributos,
+              uid: uid,
             ),
           );
         },
@@ -2008,6 +2500,7 @@ $reqText
                         ),
                       ),
                     ),
+                    SizedBox(height: 10),
                     Expanded(
                       child: Center(
                         child: ConstrainedBox(
@@ -2015,6 +2508,7 @@ $reqText
                           child: AnimatedStoryList(
                             story: story,
                             listKey: _listKey,
+                            scrollController: _scrollController,
                           ),
                         ),
                       ),

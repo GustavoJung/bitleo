@@ -57,7 +57,7 @@ class ActionMessageHelper {
     AcaoTipo.RedesSociais: [
       'Postou sobre as ações do clube nas redes.',
       'Fez um conteúdo criativo e engajou a galera.',
-      'Atualizou as redes com as últimas novidades.',
+      'Atualizou as redes com as últimas novidades do seu clube.',
     ],
     AcaoTipo.ReuniaoDistrital: [
       'Conheceu líderes de outros clubes.',
@@ -65,7 +65,7 @@ class ActionMessageHelper {
       'Compartilhou ideias em reunião com o distrito.',
     ],
     AcaoTipo.EventoEspecialJALC: [
-      'Participou da JALC e aprendeu muito sobre liderança.',
+      'Participou do JALC, aprimorou suas habilidade esportivas e fez novas amizades.',
     ],
     AcaoTipo.EventoEspecialSEDEL: ['Teve um momento transformador no SEDEL.'],
     AcaoTipo.EventoEspecialACAMPALEO: [
@@ -74,7 +74,9 @@ class ActionMessageHelper {
     AcaoTipo.EventoEspecialEncontroRegiao: [
       'Trocou experiências valiosas no Encontro de Região.',
     ],
-    AcaoTipo.EventoEspecialCONFE: ['Celebrou suas conquistas no CONFE.'],
+    AcaoTipo.EventoEspecialCONFE: [
+      'Celebrou suas conquistas na Conferência Distrital.',
+    ],
   };
 
   static String getRandomMessage(AcaoTipo tipo) {
@@ -86,10 +88,23 @@ class ActionMessageHelper {
   }
 
   static AcaoTipo? fromLabel(String label) {
-    return AcaoTipo.values.firstWhere(
-      (e) => e.name.toLowerCase() == label.replaceAll(' ', '').toLowerCase(),
-      orElse: () => AcaoTipo.Trabalhar,
-    );
+    // Remove acentos, espaços e coloca tudo minúsculo
+    final format = (String s) => s
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^\w]'), '')
+        .replaceAll('ç', 'c')
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u');
+
+    final input = format(label);
+    print(input);
+    for (final e in AcaoTipo.values) {
+      if (format(e.name) == input) return e;
+    }
+    return AcaoTipo.Trabalhar; // ou null pra pegar erro mesmo
   }
 
   static Set<String> getConquistasPossiveis(
